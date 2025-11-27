@@ -1,5 +1,3 @@
-import config from '../config';
-
 const META_DB_NAME = 'VideoEditorDB';
 const META_DB_VERSION = 1;
 const STORE_NAME = 'VideoRange';
@@ -87,7 +85,8 @@ async function loadAndStore(url: string, start: number, end: number, db: IDBData
   const cache = await readRange(id, db);
   if (cache) {
     return { status: 206, arrayBuffer: cache.arrayBuffer };
-  } console.log('miss', id);
+  }
+  console.log('miss', id);
   const response = await fetch(url, {
     ...options,
     cache: 'force-cache',
@@ -107,8 +106,8 @@ async function loadAndStore(url: string, start: number, end: number, db: IDBData
 // 每4m数据存为一份，不足视为一份（一般是结尾）
 const PER_SIZE = 1024 * 1024 * 4;
 
-export async function loadRange(url: string, start: number, end: number, fileSize: number, options?: RequestInit) {
-  if (!config.indexedDB) {
+export async function loadRange(url: string, start: number, end: number, fileSize: number, options?: RequestInit & { indexedDB: boolean }) {
+  if (!options?.indexedDB) {
     const response = await fetch(url, {
       ...options,
       cache: 'force-cache',

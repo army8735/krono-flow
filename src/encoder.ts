@@ -30,6 +30,9 @@ let offlineContext: OfflineAudioContext | undefined;
 let didVideo = false;
 let didAudio = false;
 let onFrame: (value: unknown) => void;
+let encoderFrameQue = 0;
+let encoderFrameCount = 0;
+let promise: Promise<unknown> | undefined;
 const masterChannels: Float32Array[] = []; // 音频混合缓冲区
 let lastIndex = 0;
 let lastTimestamp = 0;
@@ -41,11 +44,13 @@ export const onMessage = async (e: MessageEvent<{
   isWorker: boolean,
   timestamp: number,
   duration: number,
+  num: number,
   videoFrame: VideoFrame,
   videoEncoderConfig: VideoEncoderConfig,
   audioList: { audioChunk: AudioChunk, volume: number }[],
   audioEncoderConfig: AudioEncoderConfig,
   mute: boolean,
+  encoderFrameQue: number,
 }>) => {
   const { type, isWorker } = e.data;
   // console.log('encoder', type, isWorker, e.data.messageId);
@@ -59,10 +64,29 @@ export const onMessage = async (e: MessageEvent<{
     }
     return { data: res };
   };
-  const pm = new Promise(resolve => {
-    onFrame = resolve;
-  });
+  // const promise = new Promise(resolve => {
+  //   onFrame = resolve;
+  // });
+  if (encoderFrameQue >= 0) {
+    promise = new Promise(resolve => {
+      onFrame = resolve;
+    });
+  }
   if (type === EncoderType.INIT) {
+    promise = undefined;
+    encoderFrameQue = e.data.encoderFrameQue || 0;
+    encoderFrameCount = 0;
+    /**
+     * encoderFrameQue为0是一帧一帧渲染等待合成，负数无穷大渲染合成互相不等待，内存可能会爆，
+     * 正数是个缓存队列，主线程传入VideoFrame会占用，VideoEncoder的output()输出会消费，
+     * 如果满了主线程则不再渲染等待空闲，队列的状态通过每次调用Frame通信，会有个小延迟。
+     */
+    if (encoderFrameQue >= 0) {
+      // 这里只有非无穷，无穷在下面直接返回
+      promise = new Promise(resolve => {
+        onFrame = resolve;
+      });
+    }
     if (videoEncoder) {
       videoEncoder.close();
       videoEncoder = undefined;
@@ -75,7 +99,11 @@ export const onMessage = async (e: MessageEvent<{
       offlineContext = undefined;
     }
     const fin = () => {
-      if (didVideo && didAudio) {
+      if (!promise) {
+        return;
+      }
+      encoderFrameCount--;
+      if (!encoderFrameCount || encoderFrameCount < encoderFrameQue) {
         const res = {
           type: EncoderEvent.PROGRESS,
         };
@@ -84,6 +112,15 @@ export const onMessage = async (e: MessageEvent<{
         }
         onFrame({ data: res });
       }
+      // if (didVideo && didAudio) {
+      //   const res = {
+      //     type: EncoderEvent.PROGRESS,
+      //   };
+      //   if (isWorker) {
+      //     self.postMessage(res);
+      //   }
+      //   onFrame({ data: res });
+      // }
     };
     const vc = e.data.videoEncoderConfig?.codec;
     let format: Mp4OutputFormat | WebMOutputFormat;
@@ -119,7 +156,7 @@ export const onMessage = async (e: MessageEvent<{
           // console.log('v', chunk, metadata);
           const part = EncodedPacket.fromEncodedChunk(chunk);
           videoSource!.add(part, metadata);
-          didVideo = true;
+          // didVideo = true;
           fin();
         },
         error(e) {
@@ -164,8 +201,8 @@ export const onMessage = async (e: MessageEvent<{
           // console.log('a',  chunk, metadata)
           const part = EncodedPacket.fromEncodedChunk(chunk);
           audioSource!.add(part, metadata);
-          didAudio = true;
-          fin();
+          // didAudio = true;
+          // fin();
         },
         error(e) {
           onError(e.message);
@@ -185,8 +222,9 @@ export const onMessage = async (e: MessageEvent<{
     await output.start();
   }
   else if (type === EncoderType.FRAME) {
-    didVideo = false;
-    didAudio = false;
+    // didVideo = false;
+    // didAudio = false;
+    encoderFrameCount++;
     const videoFrame = e.data.videoFrame;
     if (videoEncoder && videoEncoder.state === 'configured' && videoFrame) {
       videoEncoder.encode(videoFrame);
@@ -238,12 +276,22 @@ export const onMessage = async (e: MessageEvent<{
           audioEncoder!.encode(audioData);
         }
       }
-      didAudio = true;
+      // didAudio = true;
     }
-    else if (e.data.mute) {
-      didAudio = true;
+    // else if (e.data.mute) {
+    //   didAudio = true;
+    // }
+    // encoderFrameQue为负数时渲染和合成互相不等待，直接返回；队列不足时也直接返回
+    if (!promise || encoderFrameCount < encoderFrameQue) {
+      const res = {
+        type: EncoderEvent.PROGRESS,
+      };
+      if (isWorker) {
+        self.postMessage(res);
+      }
+      return { data: res };
     }
-    return pm;
+    return promise;
   }
   else if (type === EncoderType.END) {
     if (!videoEncoder || !output) {

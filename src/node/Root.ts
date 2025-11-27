@@ -14,7 +14,7 @@ import mainFrag from '../gl/main.frag';
 import AbstractAnimation from '../animation/AbstractAnimation';
 import AniController from '../animation/AniController';
 import { CAN_PLAY, WAITING, REFRESH, REFRESH_COMPLETE } from '../refresh/refreshEvent';
-import MbVideoEncoder from '../util/MbVideoEncoder';
+import MbVideoEncoder, { EncodeOptions } from '../util/MbVideoEncoder';
 
 class Root extends Container {
   canvas?: HTMLCanvasElement;
@@ -293,8 +293,8 @@ class Root extends Container {
     gl.useProgram(program);
   }
 
-  async encode(cfg?: { duration?: number, video?: Partial<VideoEncoderConfig>, audio?: Partial<AudioEncoderConfig> }) {
-    return MbVideoEncoder.getInstance().start(this, cfg);
+  async encode(encodeOptions?: EncodeOptions) {
+    return MbVideoEncoder.getInstance().start(this, encodeOptions);
   }
 }
 

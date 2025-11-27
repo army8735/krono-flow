@@ -49,4 +49,5 @@ export default {
   singleSample: false, // 单帧模式，服务端合成时内存资源紧张，使用单帧解码渲染释放再合成
   mute: false, // 全局静音，不解码合成音频部分
   indexedDB: false,
+  encoderFrameQue: 0, // 渲染传给合成时帧队列缓存多少，0为一帧一帧渲染等待合成，负数为无穷大，建议4低内存高并发
 };

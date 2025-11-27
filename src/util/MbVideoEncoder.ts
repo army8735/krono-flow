@@ -21,6 +21,13 @@ export enum MbVideoEncoderEvent {
   ERROR = 'error',
 }
 
+export type EncodeOptions = {
+  timestamp?: number;
+  duration?: number;
+  video?: Partial<VideoEncoderConfig>,
+  audio?: Partial<AudioEncoderConfig>,
+};
+
 export class MbVideoEncoder extends Event {
   constructor() {
     super();
@@ -43,7 +50,7 @@ export class MbVideoEncoder extends Event {
     }
   }
 
-  async start(root: Root, cfg?: { duration?: number, video?: Partial<VideoEncoderConfig>, audio?: Partial<AudioEncoderConfig> }) {
+  async start(root: Root, encodeOptions?: EncodeOptions) {
     if (!root.canvas) {
       throw new Error('Root Missing appendTo canvas');
     }
@@ -56,7 +63,7 @@ export class MbVideoEncoder extends Event {
       bitrateMode: 'variable',
       framerate: 30,
       hardwareAcceleration: 'no-preference',
-    }, cfg?.video);
+    }, encodeOptions?.video);
     const support = await VideoEncoder.isConfigSupported(videoEncoderConfig);
     if (!support || !support.supported) {
       throw new Error('Unsupported video encoder config');
@@ -65,22 +72,26 @@ export class MbVideoEncoder extends Event {
       codec: 'opus',
       sampleRate: 44100,
       numberOfChannels: 2,
-    }, cfg?.audio);
+    }, encodeOptions?.audio);
     // 计算帧数和时间，每次走一帧的时间渲染
-    const duration = cfg?.duration || root.aniController.duration;
+    const timestamp = encodeOptions?.timestamp || 0;
+    const duration = encodeOptions?.duration || root.aniController.duration;
     if (!duration || !videoEncoderConfig.framerate) {
       return;
     }
     const spf = 1e3 / videoEncoderConfig.framerate;
-    const num = Math.ceil(duration / spf);
+    const num = Math.ceil((duration - timestamp) / spf);
+    const begin = Math.floor(timestamp / spf);
     const mes = {
       type: EncoderType.INIT,
       messageId: messageId++,
       isWorker: !!config.encoderWorker || !!config.encoderWorkerStr,
       duration,
+      num,
       videoEncoderConfig,
       audioEncoderConfig,
       mute: config.mute,
+      encoderFrameQue: config.encoderFrameQue,
     };
     if (worker) {
       worker.postMessage(mes);
@@ -89,17 +100,12 @@ export class MbVideoEncoder extends Event {
       await onMessage({ data: mes } as any);
     }
     this.emit(MbVideoEncoderEvent.START, num);
-    // 初始化decoder的音频间隔
-    MbVideoDecoder.spf = spf;
     // 记录每个node的当前时间的音频有没有提取过，避免encode重复，已node的id+时间做key
     const audioRecord: Record<string, true> = {};
-    // 先跳到后面某帧，随后从第一帧开始，以便触发音频解码
-    // root.aniController.gotoAndStop(1000);
     for (let i = 0; i < num; i++) {
-      const timestamp = i * spf;
-      console.warn('encode>>>>>>>>>>>>>>>>', i, num, timestamp);
+      const timestamp = (i + begin) * spf;
+      // console.warn('encode>>>>>>>>>>>>>>>>', i, num, timestamp);
       root.aniController.gotoAndStop(timestamp);
-      // console.log('encode', i, num, timestamp);
       this.emit(MbVideoEncoderEvent.PROGRESS, i, num, true);
       await new Promise<void>((resolve, reject) => {
         const frameCb = async () => {

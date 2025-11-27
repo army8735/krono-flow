@@ -59,7 +59,6 @@ let worker: Worker;
 let noWorker = false;
 let id = 0;
 let messageId = 0;
-let spf = 0;
 
 export class MbVideoDecoder extends Event {
   url: string;
@@ -287,6 +286,7 @@ export class MbVideoDecoder extends Event {
       type: DecoderType.META,
       messageId: messageId++,
       isWorker: !!config.decoderWorker || !!config.decoderWorkerStr,
+      indexedDB: config.indexedDB,
       preloadAll: config.preloadAll,
       gopMinDuration: config.gopMinDuration,
     };
@@ -482,7 +482,6 @@ export class MbVideoDecoder extends Event {
         index: gop.index,
         time,
         mute: config.mute,
-        spf,
       };
       if (worker) {
         worker.postMessage(mes);
@@ -586,10 +585,6 @@ export class MbVideoDecoder extends Event {
 
   get cache() {
     return HASH[this.url];
-  }
-
-  static set spf(v: number) {
-    spf = v;
   }
 }
 

@@ -113,6 +113,7 @@ export const onMessage = async (e: MessageEvent<{
   type: DecoderType,
   messageId: number,
   isWorker: boolean,
+  indexedDB: boolean,
   preloadAll: boolean,
   gopMinDuration: number,
   time: number,
@@ -162,7 +163,7 @@ export const onMessage = async (e: MessageEvent<{
       source = new StreamSource({
         read: async (start, end) => {
           // console.log(start, end);
-          const { arrayBuffer } = await loadRange(url, start, end - 1, fileSize);
+          const { arrayBuffer } = await loadRange(url, start, end - 1, fileSize, { indexedDB: e.data.indexedDB });
           if (!arrayBuffer) {
             throw new Error('Missing buffer in range: ' + start + '-' + (end - 1));
           }
