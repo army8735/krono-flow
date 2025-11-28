@@ -5,7 +5,6 @@ import config from '../config';
 import { EncoderEvent, EncoderType, onMessage } from '../encoder';
 import { CAN_PLAY, REFRESH_COMPLETE } from '../refresh/refreshEvent';
 import TimeAnimation from '../animation/TimeAnimation';
-import MbVideoDecoder from './MbVideoDecoder';
 import { reSample, sliceAudioBuffer } from './sound';
 import { AudioChunk } from '../decoder';
 
@@ -238,6 +237,9 @@ export class MbVideoEncoder extends Event {
         type: EncoderType.END,
         messageId: messageId++,
         isWorker: !!config.encoderWorker || !!config.encoderWorkerStr,
+        videoEncoderConfig,
+        audioEncoderConfig,
+        timestamp: timestamp + spf, // 比最后一帧再多一帧给audio用
       };
       if (worker) {
         worker.onmessage = cb;

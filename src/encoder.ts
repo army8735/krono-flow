@@ -27,8 +27,6 @@ let output: Output | undefined;
 let videoSource: EncodedVideoPacketSource | undefined;
 let audioSource: EncodedAudioPacketSource | undefined;
 let offlineContext: OfflineAudioContext | undefined;
-let didVideo = false;
-let didAudio = false;
 let onFrame: (value: unknown) => void;
 let encoderFrameQue = 0;
 let encoderFrameCount = 0;
@@ -36,7 +34,40 @@ let promise: Promise<unknown> | undefined;
 const masterChannels: Float32Array[] = []; // 音频混合缓冲区
 let lastIndex = 0;
 let lastTimestamp = 0;
-let masterOffset = 0;
+
+function appendAudio(
+  audioEncoder: AudioEncoder,
+  audioEncoderConfig: AudioEncoderConfig,
+  timestamp: number,
+) {
+  const { numberOfChannels, sampleRate } = audioEncoderConfig;
+  if (audioEncoder && audioEncoder.state === 'configured') {
+    // audioBuffer总是每个gop开头就会给到，所以每帧时把混合结果中当前时间之前的给到audioEncoder
+    if (timestamp) {
+      const index = Math.floor(timestamp * 1e-3 * sampleRate);
+      if (index > lastIndex) {
+        const numberOfFrames = index - lastIndex;
+        const data = new Float32Array(numberOfFrames * masterChannels.length);
+        for (let i = 0; i < masterChannels.length; i++) {
+          const mc = masterChannels[i];
+          const sub = mc.subarray(lastIndex, index);
+          data.set(sub, i * numberOfFrames);
+        }
+        const audioData = new AudioData({
+          format: 'f32-planar',
+          sampleRate,
+          numberOfFrames: numberOfFrames,
+          numberOfChannels,
+          timestamp: lastTimestamp,
+          data,
+        });
+        lastIndex = index;
+        lastTimestamp = timestamp;
+        audioEncoder!.encode(audioData);
+      }
+    }
+  }
+}
 
 export const onMessage = async (e: MessageEvent<{
   type: EncoderType,
@@ -64,9 +95,6 @@ export const onMessage = async (e: MessageEvent<{
     }
     return { data: res };
   };
-  // const promise = new Promise(resolve => {
-  //   onFrame = resolve;
-  // });
   if (encoderFrameQue >= 0) {
     promise = new Promise(resolve => {
       onFrame = resolve;
@@ -112,15 +140,6 @@ export const onMessage = async (e: MessageEvent<{
         }
         onFrame({ data: res });
       }
-      // if (didVideo && didAudio) {
-      //   const res = {
-      //     type: EncoderEvent.PROGRESS,
-      //   };
-      //   if (isWorker) {
-      //     self.postMessage(res);
-      //   }
-      //   onFrame({ data: res });
-      // }
     };
     const vc = e.data.videoEncoderConfig?.codec;
     let format: Mp4OutputFormat | WebMOutputFormat;
@@ -156,7 +175,10 @@ export const onMessage = async (e: MessageEvent<{
           // console.log('v', chunk, metadata);
           const part = EncodedPacket.fromEncodedChunk(chunk);
           videoSource!.add(part, metadata);
-          // didVideo = true;
+          // 这里也要检查audioChunk，将音频追加上去，开启合成队列时有用，使得音频分布更均匀
+          if (audioEncoder) {
+            appendAudio(audioEncoder, e.data.audioEncoderConfig, chunk.timestamp * 1e-3);
+          }
           fin();
         },
         error(e) {
@@ -201,8 +223,6 @@ export const onMessage = async (e: MessageEvent<{
           // console.log('a',  chunk, metadata)
           const part = EncodedPacket.fromEncodedChunk(chunk);
           audioSource!.add(part, metadata);
-          // didAudio = true;
-          // fin();
         },
         error(e) {
           onError(e.message);
@@ -217,70 +237,42 @@ export const onMessage = async (e: MessageEvent<{
       }
       lastIndex = 0;
       lastTimestamp = 0;
-      masterOffset = 0;
     }
     await output.start();
   }
   else if (type === EncoderType.FRAME) {
-    // didVideo = false;
-    // didAudio = false;
     encoderFrameCount++;
     const videoFrame = e.data.videoFrame;
     if (videoEncoder && videoEncoder.state === 'configured' && videoFrame) {
       videoEncoder.encode(videoFrame);
     }
     videoFrame?.close();
-    const audioList = e.data.audioList;
-    const { numberOfChannels, sampleRate } = e.data.audioEncoderConfig;
-    if (audioEncoder && audioEncoder.state === 'configured') {
+    if (audioEncoder) {
+      const audioList = e.data.audioList;
       if (audioList.length) {
-        for (let i = 0, len = audioList.length; i < len; i++) {
-          const { audioChunk, volume } = audioList[i];
-          // 计算当前时间在整体的偏移frame位置
-          const frameOffset = Math.round(audioChunk.timestamp * 1e-3 * sampleRate);
-          const length = audioChunk.numberOfFrames;
-          for (let i = 0; i < numberOfChannels; i++) {
-            const masterChannel = masterChannels[i];
-            // 直接获取每个声道的 Float32Array 数据
-            const d = audioChunk.channels[i];
-            for (let j = 0; j < length; j++) {
-              const index = frameOffset + j;
-              // 简单的增益控制clamping
-              const n = (masterChannel[index] + d[j] * volume);
-              masterChannel[index] = Math.max(-1, Math.min(1, n));
+        if (audioList.length) {
+          const { numberOfChannels, sampleRate } = e.data.audioEncoderConfig;
+          for (let i = 0, len = audioList.length; i < len; i++) {
+            const { audioChunk, volume } = audioList[i];
+            // 计算当前时间在整体的偏移frame位置
+            const frameOffset = Math.round(audioChunk.timestamp * 1e-3 * sampleRate);
+            const length = audioChunk.numberOfFrames;
+            for (let i = 0; i < numberOfChannels; i++) {
+              const masterChannel = masterChannels[i];
+              // 直接获取每个声道的 Float32Array 数据
+              const d = audioChunk.channels[i];
+              for (let j = 0; j < length; j++) {
+                const index = frameOffset + j;
+                // 简单的增益控制clamping
+                const n = (masterChannel[index] + d[j] * volume);
+                masterChannel[index] = Math.max(-1, Math.min(1, n));
+              }
             }
           }
         }
       }
-      // audioBuffer总是每个gop开头就会给到，所以每帧时把混合结果中当前时间之前的给到audioEncoder
-      if (e.data.timestamp) {
-        const index = Math.round(e.data.timestamp * 1e-3 * sampleRate);
-        if (index > lastIndex) {
-          const numberOfFrames = index - lastIndex;
-          const data = new Float32Array(numberOfFrames * masterChannels.length);
-          for (let i = 0; i < masterChannels.length; i++) {
-            const mc = masterChannels[i];
-            const sub = mc.subarray(lastIndex, index);
-            data.set(sub, i * numberOfFrames);
-          }
-          const audioData = new AudioData({
-            format: 'f32-planar',
-            sampleRate,
-            numberOfFrames: numberOfFrames,
-            numberOfChannels,
-            timestamp: lastTimestamp,
-            data,
-          });
-          lastIndex = index;
-          lastTimestamp = e.data.timestamp;
-          audioEncoder!.encode(audioData);
-        }
-      }
-      // didAudio = true;
+      appendAudio(audioEncoder, e.data.audioEncoderConfig, e.data.timestamp);
     }
-    // else if (e.data.mute) {
-    //   didAudio = true;
-    // }
     // encoderFrameQue为负数时渲染和合成互相不等待，直接返回；队列不足时也直接返回
     if (!promise || encoderFrameCount < encoderFrameQue) {
       const res = {
@@ -301,6 +293,7 @@ export const onMessage = async (e: MessageEvent<{
     videoEncoder.close();
     videoEncoder = undefined;
     if (audioEncoder?.state === 'configured') {
+      appendAudio(audioEncoder, e.data.audioEncoderConfig, e.data.timestamp);
       await audioEncoder.flush();
       audioEncoder.close();
       audioEncoder = undefined;
