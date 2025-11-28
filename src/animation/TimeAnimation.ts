@@ -64,6 +64,15 @@ class TimeAnimation extends AbstractAnimation {
     this.node.currentTime = this.originTime;
   }
 
+  override play() {
+    super.play();
+    const playState = this._playState;
+    // 重新播放需设置
+    if (playState === 'running' && !this._currentTime) {
+      this.node.currentTime = 0;
+    }
+  }
+
   onRunning(delta: number, old?: number) {
     super.onRunning(delta, old);
     const { node, duration, delay, iterations, currentTimeArea, time } = this;
