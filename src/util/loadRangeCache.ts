@@ -86,7 +86,7 @@ async function loadAndStore(url: string, start: number, end: number, db: IDBData
   if (cache) {
     return { status: 206, arrayBuffer: cache.arrayBuffer };
   }
-  console.log('miss', id);
+  // console.log('miss', id);
   const response = await fetch(url, {
     ...options,
     cache: 'force-cache',
