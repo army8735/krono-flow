@@ -2939,10 +2939,6 @@ class Text extends Node {
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
   updateRangeStyleData(location: number, length: number, modify: ModifyRichStyle) {
     let lv = RefreshLevel.NONE;
-    // 开头同时更新节点本身默认样式
-    if (location === 0) {
-      this.updateFormatStyleData(modify);
-    }
     const { rich, computedRich, style } = this;
     if (rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
@@ -3032,6 +3028,10 @@ class Text extends Node {
       }
     }
     this.mergeRich();
+    // 开头同时更新节点本身默认样式
+    if (location === 0) {
+      this.updateFormatStyleData(modify);
+    }
     return lv;
   }
 

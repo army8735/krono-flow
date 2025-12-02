@@ -537,10 +537,9 @@ class Node extends Event {
     const keys: string[] = [];
     for (let k in style) {
       if (style.hasOwnProperty(k)) {
-        const v = style[k as keyof Style];
         if (!equalStyle(style, this.style, k)) {
           // @ts-ignore
-          this.style[k] = v;
+          this.style[k] = style[k as keyof Style];
           keys.push(k);
         }
       }
