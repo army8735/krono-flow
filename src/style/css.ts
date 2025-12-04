@@ -3,7 +3,7 @@ import inject from '../util/inject';
 import { isNil, isString } from '../util/type';
 import {
   BLUR,
-  calUnit,
+  calUnit, ComputedBlur,
   ComputedGradient,
   ComputedStyle,
   FILL_RULE,
@@ -531,21 +531,34 @@ export function normalize(style: Partial<JStyle>) {
         }
         res.blur = {
           v: { t: BLUR.RADIAL, radius: { v: n, u: StyleUnit.PX }, center },
-          u: StyleUnit.BLUR
+          u: StyleUnit.BLUR,
         };
       }
       else if (t === 'motion') {
-        const match = /angle\s*\((.+)\)/i.exec(blur);
-        let angle = {
+        const matchAngle = /angle\s*\((.+)\)/i.exec(blur);
+        const angle = {
           v: 0,
           u: StyleUnit.DEG,
         };
-        if (match) {
-          angle.v = parseFloat(match[1]);
+        if (matchAngle) {
+          angle.v = parseFloat(matchAngle[1]);
+        }
+        const matchOffset = /offset\s*\((.+)\)/i.exec(blur);
+        let offset = {
+          v: 0,
+          u: StyleUnit.PX,
+        };
+        if (matchOffset) {
+          offset.v = parseFloat(matchOffset[1]);
         }
         res.blur = {
-          v: { t: BLUR.MOTION, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, angle },
-          u: StyleUnit.BLUR
+          v: {
+            t: BLUR.MOTION,
+            radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX },
+            angle,
+            offset,
+          },
+          u: StyleUnit.BLUR,
         };
       }
       else {
@@ -731,6 +744,9 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: string) {
       av.v[3] === bv.v[3]
     );
   }
+  if (k === 'blur') {
+    // TODO
+  }
   return av.v === bv.v && av.u === bv.u;
 }
 
@@ -758,6 +774,7 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
           t: v.v.t,
           radius: Object.assign({}, v.v.radius),
           angle: Object.assign({}, v.v.angle),
+          offset: Object.assign({}, v.v.offset),
         },
         u: v.u,
       };
@@ -824,16 +841,16 @@ export function getCssObjectFit(v: OBJECT_FIT) {
   return ['fill', 'contain', 'cover'][v];
 }
 
-export function getCssBlur(t: BLUR, radius: number, angle?: number, center?: [number, number], saturation?: number) {
-  if (t === BLUR.NONE) {
+export function getCssBlur(blur: ComputedBlur) {
+  if (blur.t === BLUR.NONE) {
     return 'none';
   }
-  let s = ['none', 'gauss', 'motion', 'radial', 'background'][t] + `(${radius})`;
-  if (t === BLUR.MOTION) {
-    s += ` angle(${angle || 0})`;
+  let s = ['none', 'gauss', 'motion', 'radial', 'background'][blur.t] + `(${blur.radius})`;
+  if (blur.t === BLUR.MOTION) {
+    s += ` angle(${blur.angle || 0}) offset(${blur.offset || 0})`;
   }
-  else if (t === BLUR.RADIAL) {
-    const p = (center || []).map(item => {
+  else if (blur.t === BLUR.RADIAL) {
+    const p = (blur.center || []).map(item => {
       return item * 100 + '%';
     });
     while (p.length < 2) {
@@ -841,8 +858,8 @@ export function getCssBlur(t: BLUR, radius: number, angle?: number, center?: [nu
     }
     s += ` center(${p.join(', ')})`;
   }
-  else if (t === BLUR.BACKGROUND) {
-    s += ` saturation(${(saturation === undefined ? 1 : saturation) * 100}%)`;
+  else if (blur.t === BLUR.BACKGROUND) {
+    s += ` saturation(${(blur.saturation === undefined ? 1 : blur.saturation) * 100}%)`;
   }
   return s;
 }

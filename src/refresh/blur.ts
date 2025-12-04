@@ -610,12 +610,13 @@ export function genMotionBlur(
   textureTarget: TextureCache,
   sigma: number,
   angle: number,
+  offset: number,
   W: number,
   H: number,
 ) {
   const radian = d2r(angle);
   const spread = sigma * 3;
-  const kernel = sigma * 2; // 两个方向均分
+  const kernel = sigma; // 两个方向均分
   const bboxS = textureTarget.bbox;
   const bboxR = bboxS.slice(0);
   // 视频特殊的运动模糊，不超过原本的范围，配合CLAMP_TO_EDGE效果
@@ -649,7 +650,7 @@ export function genMotionBlur(
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
     // sigma要么为0不会进入，要么>=1，*2后最小值为2，不会触发glsl中kernel的/0问题
-    const tex = t && drawMotion(gl, programMotion, t, kernel, radian, w, h);
+    const tex = t && drawMotion(gl, programMotion, t, kernel, radian, offset, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -708,7 +709,7 @@ export function genMotionBlur(
       }
       if (hasDraw) {
         gl.useProgram(programMotion);
-        item.t = drawMotion(gl, programMotion, t, kernel, radian, w, h);
+        item.t = drawMotion(gl, programMotion, t, kernel, radian, offset, w, h);
       }
       gl.deleteTexture(t);
     }

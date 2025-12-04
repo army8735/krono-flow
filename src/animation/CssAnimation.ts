@@ -15,7 +15,7 @@ export type KeyFrame = {
   style: Partial<Style>;
   time: number;
   easing?: (v: number) => number;
-  transition: { key: keyof Style, diff: number | { radius: number, angle?: number} }[]; // 到下帧有变化的key和差值
+  transition: { key: keyof Style, diff: number | { radius: number, angle?: number, offset?: number } }[]; // 到下帧有变化的key和差值
   fixed: (keyof Style)[]; // 固定不变化的key
 };
 
@@ -40,7 +40,7 @@ export class CssAnimation extends AbstractAnimation {
     this._keyFrames = keyFrames;
     this._keyFramesR = keyFramesR;
     calTransition(this.node, this._keyFrames, keys);
-    calTransition(this.node, this._keyFramesR, keys);
+    calTransition(this.node, this._keyFramesR, keys); console.log(keyFrames)
     this.originStyle = originStyle;
   }
 
@@ -156,6 +156,9 @@ export class CssAnimation extends AbstractAnimation {
           o.v.radius.v += (diff as any).radius * percent;
           if (o.v.angle) {
             o.v.angle.v += (diff as any).angle * percent;
+          }
+          if (o.v.offset) {
+            o.v.offset.v += (diff as any).offset * percent;
           }
           update[key] = o;
         }
@@ -378,6 +381,7 @@ function calTransition(node: Node, keyFrames: KeyFrame[], keys: (keyof Style)[])
             diff: {
               radius: (n as StyleBlurValue).v.radius.v - (p as StyleBlurValue).v.radius.v,
               angle: ((n as StyleBlurValue).v.angle?.v || 0) - ((p as StyleBlurValue).v.angle?.v || 0),
+              offset: ((n as StyleBlurValue).v.offset?.v || 0) - ((p as StyleBlurValue).v.offset?.v || 0),
             },
           });
         }

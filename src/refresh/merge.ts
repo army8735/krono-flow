@@ -73,7 +73,7 @@ export function genMerge(
         (blur.t === BLUR.BACKGROUND &&
           (blur.radius >= 1 || blur.saturation !== 1) && total) ||
         (blur.t === BLUR.RADIAL && blur.radius >= 1) ||
-        (blur.t === BLUR.MOTION && blur.radius > 0)
+        (blur.t === BLUR.MOTION && blur.radius >= 1)
       ) &&
       !textureFilter?.available;
     const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
@@ -487,13 +487,14 @@ function genFilter(
     res = t;
   }
   // 运动模糊/方向模糊
-  else if (blur.t === BLUR.MOTION && blur.radius > 0) {
+  else if (blur.t === BLUR.MOTION && blur.radius >= 1) {
     const t = genMotionBlur(
       gl,
       root,
       res || source,
       blur.radius,
       blur.angle || 0, // 一定有，0兜底
+      blur.offset || 0,
       W,
       H,
     );

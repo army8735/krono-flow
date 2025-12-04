@@ -403,6 +403,7 @@ export type Blur = {
   radius: StyleNumValue;
   center?: [StyleNumValue, StyleNumValue];
   saturation?: StyleNumValue;
+  offset?: StyleNumValue;
   angle?: StyleNumValue;
 };
 
@@ -411,6 +412,7 @@ export type ComputedBlur = {
   radius: number;
   center?: [number, number];
   saturation?: number;
+  offset?: number;
   angle?: number;
 };
 

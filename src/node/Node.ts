@@ -721,7 +721,7 @@ class Node extends Event {
       return item;
     });
     const blur = calComputedBlur(style.blur);
-    res.blur = getCssBlur(blur.t, blur.radius, blur.angle, blur.center, blur.saturation);
+    res.blur = getCssBlur(blur);
     res.hueRotate = style.hueRotate.v;
     res.saturate = style.saturate.v + '%';
     res.brightness = style.brightness.v + '%';

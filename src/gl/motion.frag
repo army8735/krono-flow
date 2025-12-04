@@ -4,25 +4,21 @@ precision mediump float;
 
 varying vec2 v_texCoords;
 uniform sampler2D u_texture;
-uniform float u_kernel;
+uniform int u_kernel;
 uniform vec2 u_velocity;
+uniform vec2 u_offset;
 
 const int MAX_KERNEL_SIZE = 2048;
 
 void main(void) {
-  vec4 color = texture2D(u_texture, v_texCoords);
-  int kernel = int(floor(u_kernel));
-  int k = kernel - 1;
-  for (int i = 0; i < MAX_KERNEL_SIZE - 1; i++) {
-    if (i >= k) {
+  vec4 color = texture2D(u_texture, v_texCoords + u_offset);
+  for (int i = 1; i < MAX_KERNEL_SIZE - 1; i++) {
+    if (i >= u_kernel) {
       break;
     }
-    vec2 bias = u_velocity * (float(i) / float(k) - 0.5);
-    color += texture2D(u_texture, v_texCoords + bias);
+    vec2 bias = u_velocity * (float(i) / float(u_kernel));
+    color += texture2D(u_texture, v_texCoords + bias + u_offset) * 0.5;
+    color += texture2D(u_texture, v_texCoords - bias + u_offset) * 0.5;
   }
-  float dec = u_kernel - float(kernel);
-  if (dec > 0.0) {
-    color += texture2D(u_texture, v_texCoords + u_velocity * -0.5) * dec;
-  }
-  gl_FragColor = color / (u_kernel);
+  gl_FragColor = color / float(u_kernel);
 }

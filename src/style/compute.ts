@@ -47,6 +47,7 @@ export function calComputedBlur(blur: Style['blur']) {
     radius: v.radius?.v || 0,
     center: v.center ? (v.center.map(item => item.v * 0.01) as [number, number]) : ([0.5, 0.5] as [number, number]),
     saturation: (v.saturation?.v ?? 100) * 0.01,
+    offset: v.offset?.v || 0,
     angle: v.angle ? v.angle.v : 0,
   };
 }

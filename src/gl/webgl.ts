@@ -505,17 +505,24 @@ export function drawMotion(
   texture: WebGLTexture,
   kernel: number,
   radian: number,
+  offset: number,
   width: number,
   height: number,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
-  gl.uniform1f(u_kernel, kernel);
+  gl.uniform1i(u_kernel, Math.floor(kernel));
   const sin = Math.sin(radian) * kernel / height;
   const cos = Math.cos(radian) * kernel / width;
   const u_velocity = gl.getUniformLocation(program, 'u_velocity');
   gl.uniform2f(u_velocity, cos, sin);
+  const h = Math.sin(radian) * offset / height;
+  const v = Math.cos(radian) * offset / width;
+  const u_offset = gl.getUniformLocation(program, 'u_offset');
+  gl.uniform2f(u_offset, v, h);
+  // console.log(kernel, radian, offset, cos, sin);
+  // console.log(v, h);
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
   let tex1 = texture;
