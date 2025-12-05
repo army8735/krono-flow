@@ -9,7 +9,9 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
     const { matrixWorld } = child;
-    if (!child.hasContent || child.computedStyle.visibility === VISIBILITY.HIDDEN) {
+    if (!child.hasContent
+      || child.computedStyle.visibility === VISIBILITY.HIDDEN
+      || !child.computedStyle.pointerEvents) {
       continue;
     }
     const rect = child._rect || child.rect;

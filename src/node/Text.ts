@@ -1000,6 +1000,9 @@ class Text extends Node {
       this.lineBoxList.forEach((item) => {
         item.list.forEach(textBox => {
           textBox.color = color2rgbaStr(computedStyle.color);
+          textBox.stroke = computedStyle.stroke;
+          textBox.strokeWidth = computedStyle.strokeWidth;
+          textBox.strokeEnable = computedStyle.strokeEnable;
         });
       });
     }

@@ -146,8 +146,8 @@ export function bindTexture(
 
 export type DrawData = {
   opacity: number;
-  matrix?: Float64Array;
-  bbox: Float64Array;
+  matrix?: Float32Array;
+  bbox: Float32Array;
   coords?: { // 手动传入提前计算好的坐标，tile时复用数据
     t1: { x: number, y: number },
     t2: { x: number, y: number },
@@ -214,8 +214,9 @@ export function drawTextureCache(
       texture,
     } = list[i];
     bindTexture(gl, texture, 0);
-    const { t1, t2, t3, t4 } =
-      coords ? offsetCoords(coords, dx, dy) : bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
+    const { t1, t2, t3, t4 } = coords
+      ? offsetCoords(coords, dx, dy)
+      : bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
     let k = i * 12;
     vtPoint[k] = t1.x;
     vtPoint[k + 1] = t1.y;
@@ -663,7 +664,7 @@ export function drawColorMatrix(
   gl.disableVertexAttribArray(a_texCoords);
 }
 
-export function convertCoords2Gl(
+function pointNDC(
   x: number,
   y: number,
   cx: number,
@@ -695,14 +696,14 @@ export function convertCoords2Gl(
  * matrix是最终世界matrix，包含了画布缩放的scale（PageContainer上），因此坐标是bbox乘matrix，
  * dx/dy不参与matrix计算
  */
-export function bbox2Coords(
-  bbox: Float64Array,
+function bbox2Coords(
+  bbox: Float32Array,
   cx: number,
   cy: number,
   dx = 0,
   dy = 0,
   flipY = true,
-  matrix?: Float64Array,
+  matrix?: Float32Array,
 ) {
   const t = calRectPoints(
     bbox[0],
@@ -712,14 +713,14 @@ export function bbox2Coords(
     matrix,
   );
   const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-  const t1 = convertCoords2Gl(x1 + dx, y1 + dy, cx, cy, flipY);
-  const t2 = convertCoords2Gl(x2 + dx, y2 + dy, cx, cy, flipY);
-  const t3 = convertCoords2Gl(x3 + dx, y3 + dy, cx, cy, flipY);
-  const t4 = convertCoords2Gl(x4 + dx, y4 + dy, cx, cy, flipY);
+  const t1 = pointNDC(x1 + dx, y1 + dy, cx, cy, flipY);
+  const t2 = pointNDC(x2 + dx, y2 + dy, cx, cy, flipY);
+  const t3 = pointNDC(x3 + dx, y3 + dy, cx, cy, flipY);
+  const t4 = pointNDC(x4 + dx, y4 + dy, cx, cy, flipY);
   return { t1, t2, t3, t4 };
 }
 
-export function offsetCoords(
+function offsetCoords(
   coords: {
     t1: { x: number, y: number },
     t2: { x: number, y: number },

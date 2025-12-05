@@ -2,8 +2,8 @@ import { calRectPoints } from '../math/matrix';
 import { isConvexPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 
 export function checkInScreen(
-  bbox: Float64Array,
-  matrix: Float64Array | undefined,
+  bbox: Float32Array,
+  matrix: Float32Array | undefined,
   width: number,
   height: number,
 ) {
@@ -11,8 +11,8 @@ export function checkInScreen(
 }
 
 export function checkInRect(
-  bbox: Float64Array,
-  matrix: Float64Array | undefined,
+  bbox: Float32Array,
+  matrix: Float32Array | undefined,
   x: number,
   y: number,
   width: number,

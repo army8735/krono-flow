@@ -8,6 +8,7 @@ import { VideoAudioMeta } from '../decoder';
 export type Props = {
   uuid?: string;
   name?: string;
+  isLocked?: boolean;
   style?: Partial<JStyle>;
 }
 
@@ -124,6 +125,8 @@ export type ComputedRich = Pick<ComputedStyle,
   length: number;
 };
 
+type Origin = number | 'left' | 'right' | 'top' | 'bottom' | 'center';
+
 export type JStyle = {
   top: number | string;
   right: number | string;
@@ -162,10 +165,16 @@ export type JStyle = {
   strokeMiterlimit: number;
   translateX: string | number;
   translateY: string | number;
+  skewX: number;
+  skewY: number;
   scaleX: number;
   scaleY: number;
+  rotateX: number;
+  rotateY: number;
   rotateZ: number;
-  transformOrigin: Array<number | 'left' | 'right' | 'top' | 'bottom' | 'center'> | string;
+  transformOrigin: ([Origin, Origin]) | string;
+  perspective: number;
+  perspectiveOrigin: ([Origin, Origin]) | string;
   mixBlendMode:
     | 'normal'
     | 'multiply'
@@ -187,6 +196,7 @@ export type JStyle = {
     | 'saturation'
     | 'color'
     | 'luminosity';
+  pointerEvents: boolean;
   objectFit: 'fill' | 'contain' | 'cover';
   borderTopLeftRadius: number,
   borderTopRightRadius: number,
@@ -208,7 +218,12 @@ export type ModifyJRichStyle = Partial<Omit<JRich, 'location' | 'length'>>;
 export type ModifyRichStyle = Partial<Omit<Rich, 'location' | 'length'>>;
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
-  return Object.assign({}, DEFAULT_STYLE, v);
+  const dft = Object.assign({}, DEFAULT_STYLE);
+  (['transformOrigin', 'perspectiveOrigin', 'color', 'strokeDasharray'] as const).forEach(k => {
+    // @ts-ignore
+    dft[k] = dft[k].slice(0);
+  });
+  return Object.assign(dft, v);
 }
 
 export default {

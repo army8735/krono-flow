@@ -26,7 +26,7 @@ export function genColorMatrix(
     const rotation = d2r(hueRotate % 360);
     const cosR = Math.cos(rotation);
     const sinR = Math.sin(rotation);
-    const mh = hueRotate ? new Float64Array([
+    const mh = hueRotate ? new Float32Array([
       0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0,
       0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0,
       0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0,
@@ -39,7 +39,7 @@ export function genColorMatrix(
     const sr = (1 - s) * lr;
     const sg = (1 - s) * lg;
     const sb = (1 - s) * lb;
-    const ms = saturate !== 1 ? new Float64Array([
+    const ms = saturate !== 1 ? new Float32Array([
       sr + s, sg, sb, 0,
       sr, sg + s, sb, 0,
       sr, sg, sb + s, 0,

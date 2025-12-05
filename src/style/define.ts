@@ -200,10 +200,17 @@ export type Style = {
   strokeMiterlimit: StyleNumValue;
   translateX: StyleNumValue;
   translateY: StyleNumValue;
+  skewX: StyleNumValue;
+  skewY: StyleNumValue;
   scaleX: StyleNumValue;
   scaleY: StyleNumValue;
+  rotateX: StyleNumValue;
+  rotateY: StyleNumValue;
   rotateZ: StyleNumValue;
   transformOrigin: [StyleNumValue, StyleNumValue];
+  perspective: StyleNumValue,
+  perspectiveOrigin: [StyleNumValue, StyleNumValue],
+  pointerEvents: StyleBoolValue;
   mixBlendMode: StyleMbmValue;
   objectFit: StyleObjectFitValue;
   borderTopLeftRadius: StyleNumValue;
@@ -255,11 +262,18 @@ export type ComputedStyle = {
   strokeMiterlimit: number;
   translateX: number;
   translateY: number;
+  skewX: number;
+  skewY: number;
   scaleX: number;
   scaleY: number;
+  rotateX: number;
+  rotateY: number;
   rotateZ: number;
-  transformOrigin: number[];
+  transformOrigin: [number, number];
+  perspective: number,
+  perspectiveOrigin: [number, number];
   mixBlendMode: MIX_BLEND_MODE;
+  pointerEvents: boolean;
   objectFit: OBJECT_FIT;
   borderTopLeftRadius: number;
   borderTopRightRadius: number;

@@ -423,9 +423,8 @@ export function normalize(style: Partial<JStyle>) {
   if (style.strokeMiterlimit !== undefined) {
     res.strokeMiterlimit = { v: style.strokeMiterlimit, u: StyleUnit.NUMBER };
   }
-  // 只有这几个，3d没有
-  ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
-    let v = style[k as keyof JStyle];
+  (['translateX', 'translateY', 'skewX', 'skewY', 'scaleX', 'scaleY', 'rotateX', 'rotateY', 'rotateZ', 'perspective'] as const).forEach((k) => {
+    let v = style[k];
     if (v === undefined) {
       return;
     }
@@ -477,6 +476,9 @@ export function normalize(style: Partial<JStyle>) {
   }
   if (style.mixBlendMode !== undefined) {
     res.mixBlendMode = { v: getBlendMode(style.mixBlendMode), u: StyleUnit.NUMBER };
+  }
+  if (style.pointerEvents !== undefined) {
+    res.pointerEvents = { v: style.pointerEvents, u: StyleUnit.BOOLEAN };
   }
   if (style.objectFit !== undefined) {
     res.objectFit = { v: getObjectFit(style.objectFit), u: StyleUnit.NUMBER };
@@ -725,29 +727,86 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: keyof Style)
   if (a === b) {
     return true;
   }
-  let as = a[k];
-  let bs = b[k];
+  let as = a[k] as any;
+  let bs = b[k] as any;
   if (as === undefined && bs === undefined) {
     return true;
   }
   if (as === undefined || bs === undefined) {
     return false;
   }
-  if (k === 'transformOrigin') {
+  if (k === 'transformOrigin' || k === 'perspectiveOrigin') {
     return (
-      (as as Style['transformOrigin'])[0].v === (bs as Style['transformOrigin'])[0].v &&
-      (as as Style['transformOrigin'])[0].u === (bs as Style['transformOrigin'])[0].u &&
-      (as as Style['transformOrigin'])[1].v === (bs as Style['transformOrigin'])[1].v &&
-      (as as Style['transformOrigin'])[1].u === (bs as Style['transformOrigin'])[1].u
+      as[0].v === bs[0].v &&
+      as[0].u === bs[0].u &&
+      as[1].v === bs[1].v &&
+      as[1].u === bs[1].u
     );
   }
   if (k === 'color' || k === 'backgroundColor') {
     return (
-      (as as Style['color']).v[0] === (bs as Style['color']).v[0] &&
-      (as as Style['color']).v[1] === (bs as Style['color']).v[1] &&
-      (as as Style['color']).v[2] === (bs as Style['color']).v[2] &&
-      (as as Style['color']).v[3] === (bs as Style['color']).v[3]
+      as.v[0] === bs.v[0] &&
+      as.v[1] === bs.v[1] &&
+      as.v[2] === bs.v[2] &&
+      as.v[3] === bs.v[3]
     );
+  }
+  if (k === 'fill' || k === 'stroke') {
+    if (as.length !== bs.length) {
+      return false;
+    }
+    for (let i = 0, len = as.length; i < len; i++) {
+      const ai = as[i],
+        bi = bs[i];
+      if (ai.u !== bi.u) {
+        return false;
+      }
+      if (ai.u === StyleUnit.RGBA) {
+        if (
+          ai.v[0] !== bi.v[0] ||
+          ai.v[1] !== bi.v[1] ||
+          ai.v[2] !== bi.v[2] ||
+          ai.v[3] !== bi.v[3]
+        ) {
+          return false;
+        }
+      }
+      else if (ai.u === StyleUnit.GRADIENT) {
+        if (ai.v.t !== bi.v.t) {
+          return false;
+        }
+        if (ai.v.d.length !== bi.v.d.length) {
+          return false;
+        }
+        for (let i = 0, len = ai.v.d.length; i < len; i++) {
+          if (ai.v.d[i] !== bi.v.d[i]) {
+            return false;
+          }
+        }
+        if (ai.v.stops.length !== bi.v.stops.length) {
+          return false;
+        }
+        for (let i = 0, len = ai.v.stops.length; i < len; i++) {
+          const as = ai.v.stops[i],
+            bs = bi.v.stops[i];
+          if (
+            as.color.v[0] !== bs.color.v[0] ||
+            as.color.v[1] !== bs.color.v[1] ||
+            as.color.v[2] !== bs.color.v[2] ||
+            as.color.v[3] !== bs.color.v[3]
+          ) {
+            return false;
+          }
+          if ((as.offset && !bs.offset) || (!as.offset && bs.offset)) {
+            return false;
+          }
+          if (as.offset.u !== bs.offset.u || as.offset.v !== bs.offset.v) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
   }
   if (k === 'blur') {
     const av = (as as Style['blur']).v;
@@ -798,7 +857,7 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
     if (!v) {
       continue;
     }
-    if (k === 'transformOrigin') {
+    if (k === 'transformOrigin' || k === 'perspectiveOrigin') {
       res[k] = [Object.assign({}, v[0]), Object.assign({}, v[1])];
     }
     else if (k === 'blur') {

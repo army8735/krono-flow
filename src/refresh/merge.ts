@@ -292,13 +292,11 @@ function genTotal(
       const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
       const x0 = x + j * UNIT,
         y0 = y + i * UNIT;
-      const w0 = width,
-        h0 = height;
-      const bbox = new Float64Array([
+      const bbox = new Float32Array([
         x0,
         y0,
-        x0 + w0,
-        y0 + h0,
+        x0 + width,
+        y0 + height,
       ]);
       // 如有设置frame的overflow裁剪
       let xa = -1, ya = -1, xb = 1, yb = 1;
@@ -321,7 +319,7 @@ function genTotal(
       i += total2;
       continue;
     }
-    let opacity: number, matrix: Float64Array;
+    let opacity: number, matrix: Float32Array;
     // 首个节点即局部根节点
     if (i === index) {
       opacity = node2.tempOpacity = 1;

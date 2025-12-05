@@ -671,14 +671,15 @@ class Listener extends Event {
 
   removeNode(nodes = this.selected) {
     if (nodes.length) {
+      const sel = nodes.splice(0).filter(item => !item.isLocked);
       const data: RemoveData[] = [];
       nodes.forEach((item, i) => {
         const o = RemoveCommand.operate(item);
         data.push(o);
       });
       this.select.hideSelect();
-      this.history.addCommand(new RemoveCommand(nodes.slice(0), data));
-      this.emit(interactionEvent.REMOVE, nodes.slice(0));
+      this.history.addCommand(new RemoveCommand(sel, data));
+      this.emit(interactionEvent.REMOVE, sel.slice(0));
       this.emit(interactionEvent.SELECT, []);
     }
   }

@@ -31,7 +31,7 @@ const CANVAS_MAP = new WeakMap<HTMLCanvasElement, {
 }>();
 
 export type SubTexture = {
-  bbox: Float64Array;
+  bbox: Float32Array;
   w: number;
   h: number;
   t: WebGLTexture;
@@ -41,14 +41,14 @@ export type SubTexture = {
 class TextureCache {
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   available: boolean;
-  bbox: Float64Array;
+  bbox: Float32Array;
   list: SubTexture[];
   image?: HTMLImageElement;
   canvasCache?: CanvasCache;
   videoFrame?: VideoFrame;
   canvas?: HTMLCanvasElement;
 
-  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array,
+  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float32Array,
               source?: CanvasCache | HTMLImageElement | VideoFrame | HTMLCanvasElement,
               tc?: { x1: number, y1: number, x3: number, y3: number }) {
     this.gl = gl;
@@ -71,7 +71,7 @@ class TextureCache {
           const item = list[i];
           const t = createTexture(gl, 0, item.os.canvas);
           this.list.push({
-            bbox: new Float64Array([
+            bbox: new Float32Array([
               item.x * r1, // 允许小数
               item.y * r2,
               Math.min(maxX, (item.x + item.w) * r1), // 精度问题保底
@@ -89,7 +89,7 @@ class TextureCache {
         if (source instanceof HTMLImageElement) {
           this.image = source;
           this.list.push({
-            bbox: new Float64Array(bbox),
+            bbox: new Float32Array(bbox),
             w: source.width,
             h: source.height,
             t,
@@ -99,7 +99,7 @@ class TextureCache {
         else if (source instanceof VideoFrame) {
           this.videoFrame = source;
           this.list.push({
-            bbox: new Float64Array(bbox),
+            bbox: new Float32Array(bbox),
             w: source.codedWidth,
             h: source.codedHeight,
             t,
@@ -109,7 +109,7 @@ class TextureCache {
         else if (source instanceof HTMLCanvasElement) {
           this.canvas = source;
           this.list.push({
-            bbox: new Float64Array(bbox),
+            bbox: new Float32Array(bbox),
             w: source.width,
             h: source.height,
             t,
@@ -213,7 +213,7 @@ class TextureCache {
     return CANVAS_CACHE_MAP.has(canvasCache);
   }
 
-  static getCanvasCacheInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, canvasCache: CanvasCache, bbox: Float64Array) {
+  static getCanvasCacheInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, canvasCache: CanvasCache, bbox: Float32Array) {
     const cache = CANVAS_CACHE_MAP.get(canvasCache);
     if (cache) {
       cache.count++;
@@ -231,7 +231,7 @@ class TextureCache {
       for (let i = 0; i < len; i++) {
         const item = value[i];
         res.list.push({
-          bbox: new Float64Array([
+          bbox: new Float32Array([
             item.x * r1, // 允许小数，只有图片有小数
             item.y * r2,
             Math.min(maxX, (item.x + item.w) * r1), // 精度问题保底，防止最后一个超过
@@ -267,7 +267,7 @@ class TextureCache {
     return IMG_MAP.has(img);
   }
 
-  static getImgInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, image: HTMLImageElement, bbox: Float64Array,
+  static getImgInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, image: HTMLImageElement, bbox: Float32Array,
                         tc?: { x1: number, y1: number, x3: number, y3: number }) {
     const cache = IMG_MAP.get(image);
     if (cache) {
@@ -297,7 +297,7 @@ class TextureCache {
     return VIDEO_FRAME_MAP.has(videoFrame);
   }
 
-  static getVideoFrameInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, videoFrame: VideoFrame, bbox: Float64Array,
+  static getVideoFrameInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, videoFrame: VideoFrame, bbox: Float32Array,
                                tc?: { x1: number, y1: number, x3: number, y3: number }) {
     const cache = VIDEO_FRAME_MAP.get(videoFrame);
     if (cache) {
@@ -322,7 +322,7 @@ class TextureCache {
     return res;
   }
 
-  static getCanvasInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, canvas: HTMLCanvasElement, bbox: Float64Array,
+  static getCanvasInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, canvas: HTMLCanvasElement, bbox: Float32Array,
                            tc?: { x1: number, y1: number, x3: number, y3: number }) {
     const cache = CANVAS_MAP.get(canvas);
     if (cache) {
@@ -347,7 +347,7 @@ class TextureCache {
     return res;
   }
 
-  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array) {
+  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float32Array) {
     return new TextureCache(gl, bbox);
   }
 }

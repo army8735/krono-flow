@@ -47,6 +47,7 @@ class Node extends Event {
   props: Props;
   uuid: string;
   name?: string;
+  isLocked: boolean;
   root?: Root;
   parent?: Container;
   prev?: Node;
@@ -61,9 +62,10 @@ class Node extends Event {
   hasCacheOp: boolean; // 是否计算过世界opacity
   localOpId: number; // 同下面的matrix
   parentOpId: number;
-  transform: Float64Array; // 不包含transformOrigin
-  matrix: Float64Array; // 包含transformOrigin
-  _matrixWorld: Float64Array; // 世界transform
+  transform: Float32Array; // 不包含transformOrigin
+  matrix: Float32Array; // 包含transformOrigin
+  pptMatrix: Float32Array; // 包含perspective
+  _matrixWorld: Float32Array; // 世界transform
   hasCacheMw: boolean; // 是否计算过世界matrix
   localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
   parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
@@ -74,13 +76,13 @@ class Node extends Event {
   textureFilter?: TextureCache; // 有filter时的缓存
   textureTarget?: TextureCache; // 指向自身所有缓存中最优先的那个
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
-  tempMatrix: Float64Array;
-  tempBbox?: Float64Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
-  _rect?: Float64Array; // 真实内容组成的内容框，group/geom特殊计算
-  _bbox?: Float64Array; // 以rect为基础，包含边框包围盒
-  _filterBbox?: Float64Array; // 包含filter/阴影内内容外的包围盒
-  _bboxInt?: Float64Array; // 扩大取整的bbox，渲染不会糊
-  _filterBboxInt?: Float64Array; // 同上
+  tempMatrix: Float32Array;
+  tempBbox?: Float32Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
+  _rect?: Float32Array; // 真实内容组成的内容框，group/geom特殊计算
+  _bbox?: Float32Array; // 以rect为基础，包含边框包围盒
+  _filterBbox?: Float32Array; // 包含filter/阴影内内容外的包围盒
+  _bboxInt?: Float32Array; // 扩大取整的bbox，渲染不会糊
+  _filterBboxInt?: Float32Array; // 同上
   animationList: AbstractAnimation[]; // 节点上所有的动画列表
   protected contentLoadingNum: number; // 标识当前一共有多少显示资源在加载中
 
@@ -90,6 +92,7 @@ class Node extends Event {
     this.props = props;
     this.uuid = props.uuid || uuid.v4();
     this.name = props.name;
+    this.isLocked = !!props.isLocked;
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {};
@@ -108,6 +111,7 @@ class Node extends Event {
     this.parentOpId = 0;
     this.transform = identity();
     this.matrix = identity();
+    this.pptMatrix = identity();
     this._matrixWorld = identity();
     this.hasCacheMw = false;
     this.localMwId = 0;
@@ -328,6 +332,7 @@ class Node extends Event {
     computedStyle.strokeLinejoin = style.strokeLinejoin.v;
     computedStyle.strokeMiterlimit = style.strokeMiterlimit.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
+    computedStyle.pointerEvents = style.pointerEvents.v;
     computedStyle.objectFit = style.objectFit.v;
     computedStyle.borderTopLeftRadius = style.borderTopLeftRadius.v;
     computedStyle.borderTopRightRadius = style.borderTopRightRadius.v;
@@ -490,6 +495,8 @@ class Node extends Event {
     }
   }
 
+  calPerspective() {}
+
   calOpacity() {
     const { style, computedStyle } = this;
     if (this.hasCacheOp || !this.localOpId) {
@@ -565,7 +572,7 @@ class Node extends Event {
     const keys: string[] = [];
     for (let k in style) {
       if (style.hasOwnProperty(k)) {
-        if (!equalStyle(style, this.style, k)) {
+        if (!equalStyle(style, this.style, k as keyof Style)) {
           // @ts-ignore
           this.style[k] = style[k as keyof Style];
           keys.push(k);
@@ -577,6 +584,7 @@ class Node extends Event {
 
   clearTexCache(includeSelf = false) {
     if (includeSelf) {
+      this.refreshLevel |= RefreshLevel.REPAINT;
       this.textureCache?.release();
     }
     this.textureTotal?.release();
@@ -646,7 +654,7 @@ class Node extends Event {
       res.fillMode = res.fillMode.slice(0);
       res.strokeEnable = res.strokeEnable.slice(0);
       res.strokeWidth = res.strokeWidth.slice(0);
-      res.transformOrigin = res.transformOrigin.slice(0);
+      res.transformOrigin = res.transformOrigin.slice(0) as [number, number];
       res.strokeDasharray = res.strokeDasharray.slice(0);
     }
     return res;
@@ -1406,7 +1414,7 @@ class Node extends Event {
   get rect() {
     let res = this._rect;
     if (!res) {
-      res = this._rect = new Float64Array(4);
+      res = this._rect = new Float32Array(4);
       res[0] = 0;
       res[1] = 0;
       res[2] = this.computedStyle.width;

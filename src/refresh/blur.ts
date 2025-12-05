@@ -36,7 +36,7 @@ function drawInSpreadBbox(
         y0 = y + i * UNIT;
       const w0 = width,
         h0 = height;
-      const bbox = new Float64Array([
+      const bbox = new Float32Array([
         x0,
         y0,
         x0 + w0,
@@ -75,7 +75,7 @@ function drawInSpreadBbox(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0],
                   bbox2[1],
                   bbox2[2],
@@ -109,7 +109,7 @@ function createInOverlay(
   const UNIT = config.maxTextureSize;
   const unit = UNIT - spread * 2; // 去除spread的单位
   const listO: {
-    bbox: Float64Array,
+    bbox: Float32Array,
     w: number, h: number,
     x1: number, y1: number, x2: number, y2: number, // 中间覆盖渲染的部分
     t: WebGLTexture,
@@ -124,7 +124,7 @@ function createInOverlay(
         y1 = Math.max(bboxR[1], y + i * unit - spread);
       let x2 = Math.min(bboxR[2], x1 + spread * 4),
         y2 = Math.min(bboxR[3], y1 + unit + spread * 2);
-      const bbox = new Float64Array([x1, y1, x2, y2]);
+      const bbox = new Float32Array([x1, y1, x2, y2]);
       if (x1 > bboxR[2] - spread * 2) {
         x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
         x2 = bbox[2] = bboxR[2];
@@ -155,7 +155,7 @@ function createInOverlay(
         y1 = Math.max(bboxR[1], y + i * UNIT - spread * 2);
       let x2 = Math.min(bboxR[2], x1 + unit + spread * 2),
         y2 = Math.min(bboxR[3], y1 + spread * 4);
-      const bbox = new Float64Array([x1, y1, x2, y2]);
+      const bbox = new Float32Array([x1, y1, x2, y2]);
       if (x1 > bboxR[2] - spread * 2) {
         x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
         x2 = bbox[2] = bboxR[2];
@@ -187,12 +187,12 @@ function drawInOverlay(
   program: WebGLProgram,
   res: TextureCache,
   listO: {
-    bbox: Float64Array,
+    bbox: Float32Array,
     w: number, h: number,
     x1: number, y1: number, x2: number, y2: number,
     t: WebGLTexture,
   }[],
-  bboxR: Float64Array,
+  bboxR: Float32Array,
   spread: number,
 ) {
   gl.useProgram(program);
@@ -238,7 +238,7 @@ function drawInOverlay(
           [
             {
               opacity: 1,
-              bbox: new Float64Array([
+              bbox: new Float32Array([
                 bbox3[0],
                 bbox3[1],
                 bbox3[2],
@@ -349,7 +349,7 @@ export function genGaussBlur(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0],
                   bbox2[1],
                   bbox2[2],
@@ -568,7 +568,7 @@ export function genRadialBlur(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0],
                   bbox2[1],
                   bbox2[2],
@@ -690,7 +690,7 @@ export function genMotionBlur(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0],
                   bbox2[1],
                   bbox2[2],
