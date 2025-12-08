@@ -1,6 +1,6 @@
 import { ComputedRich, JRich, JStyle, Rich, } from '../format';
 import inject from '../util/inject';
-import { isNil, isString } from '../util/type';
+import { clone, isNil, isString } from '../util/type';
 import {
   BLUR,
   calUnit,
@@ -880,6 +880,26 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
     }
     if (k === 'transformOrigin' || k === 'perspectiveOrigin') {
       res[k] = [Object.assign({}, v[0]), Object.assign({}, v[1])];
+    }
+    else if (k === 'color' || k === 'backgroundColor') {
+      res[k] = {
+        v: v.v.slice(0),
+        u: v.u,
+      };
+    }
+    else if (k === 'fill' || k === 'stroke') {
+      res[k] = v.map((item: any) => clone(item));
+    }
+    else if (
+      k === 'fillEnable' ||
+      k === 'fillRule' ||
+      k === 'fillOpacity' ||
+      k === 'strokeEnable' ||
+      k === 'strokeWidth' ||
+      k === 'strokePosition' ||
+      k === 'strokeDasharray'
+    ) {
+      res[k] = v.map((item: any) => Object.assign({}, item));
     }
     else if (k === 'blur') {
       res[k] = {

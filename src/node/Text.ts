@@ -210,7 +210,7 @@ class Text extends Node {
 
   constructor(props: TextProps) {
     super(props);
-    this._content = props.content || '';
+    this._content = (props.content).toString() || '';
     this.rich = (props.rich?.slice(0) || []).map(item => normalizeRich(item, this.style));
     this.computedRich = this.rich.map(item => this.calComputedRich(item));
     this.mergeRich();
