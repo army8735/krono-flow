@@ -593,7 +593,7 @@ export function genMotionBlur(
   H: number,
 ) {
   const radian = d2r(angle);
-  const spread = sigma * 1.5;
+  const spread = sigma * 3;
   const kernel = sigma; // 两个方向均分
   const bboxS = textureTarget.bbox;
   const bboxR = bboxS.slice(0);
