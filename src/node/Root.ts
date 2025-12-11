@@ -11,6 +11,8 @@ import { checkReflow } from '../refresh/reflow';
 import { initShaders } from '../gl/webgl';
 import mainVert from '../gl/main.vert';
 import mainFrag from '../gl/main.frag';
+import prVert from '../gl/pr.vert';
+import prFrag from '../gl/pr.frag';
 import boxFrag from '../gl/box.frag';
 import dualDownFrag from '../gl/dualDown.frag';
 import dualUpFrag from '../gl/dualUp.frag';
@@ -310,42 +312,48 @@ class Root extends Container {
 
   private initProgram(gl: WebGL2RenderingContext | WebGLRenderingContext) {
     const isWebgl2 = this.isWebgl2;
-    this.programs.main = new CacheProgram(gl, initShaders(gl, mainVert, mainFrag, this.isWebgl2), isWebgl2 ? {
-      uniform: [
-        'u_texture[0]',
-        'u_texture[1]',
-        'u_texture[2]',
-        'u_texture[3]',
-        'u_texture[4]',
-        'u_texture[5]',
-        'u_texture[6]',
-        'u_texture[7]',
-        'u_texture[8]',
-        'u_texture[9]',
-        'u_texture[10]',
-        'u_texture[11]',
-        'u_texture[12]',
-        'u_texture[13]',
-        'u_texture[14]',
-        'u_texture[15]',
-      ],
-      attrib: ['a_position', 'a_texCoords', 'a_opacity', 'a_clip', 'a_textureIndex'],
-    } : {
+    this.programs.main = new CacheProgram(gl, initShaders(gl, mainVert, mainFrag), {
       uniform: ['u_clip', 'u_texture', 'u_opacity'],
       attrib: ['a_position', 'a_texCoords'],
     });
+    if (isWebgl2) {
+      this.programs.pr = new CacheProgram(gl, initShaders(gl, prVert, prFrag), {
+        uniform: [
+          'u_texture[0]',
+          'u_texture[1]',
+          'u_texture[2]',
+          'u_texture[3]',
+          'u_texture[4]',
+          'u_texture[5]',
+          'u_texture[6]',
+          'u_texture[7]',
+          'u_texture[8]',
+          'u_texture[9]',
+          'u_texture[10]',
+          'u_texture[11]',
+          'u_texture[12]',
+          'u_texture[13]',
+          'u_texture[14]',
+          'u_texture[15]',
+        ],
+        attrib: ['a_position', 'a_texCoords', 'a_opacity', 'a_clip', 'a_textureIndex'],
+      });
+    }
     this.programs.box = new CacheProgram(gl, initShaders(gl, simpleVert, boxFrag), {
       uniform: ['u_texture', 'u_pw', 'u_ph', 'u_r', 'u_direction'],
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.dualDown = new CacheProgram(gl, initShaders(gl, simpleVert, dualDownFrag), {
-      uniform: ['u_x', 'u_y'],
+      uniform: ['u_x', 'u_y', 'u_texture'],
+      attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.dualUp = new CacheProgram(gl, initShaders(gl, simpleVert, dualUpFrag), {
-      uniform: ['u_x', 'u_y'],
+      uniform: ['u_x', 'u_y', 'u_texture'],
+      attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.motion = new CacheProgram(gl, initShaders(gl, simpleVert, motionFrag), {
-      uniform: ['u_kernel', 'u_velocity'],
+      uniform: ['u_kernel', 'u_velocity', 'u_texture'],
+      attrib: ['a_position', 'a_texCoords'],
     });
     // this.programs.radialProgram = initShaders(gl, simpleVert, radialFrag);
     // this.programs.cmProgram = initShaders(gl, simpleVert, cmFrag);

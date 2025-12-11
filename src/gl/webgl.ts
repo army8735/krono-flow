@@ -7,9 +7,8 @@ export function initShaders(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   vshader: string,
   fshader: string,
-  webgl2 = false,
 ) {
-  let program = createProgram(gl, vshader, fshader, webgl2);
+  let program = createProgram(gl, vshader, fshader);
   if (!program) {
     throw new Error('Failed to create program');
   }
@@ -24,11 +23,10 @@ function createProgram(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   vshader: string,
   fshader: string,
-  webgl2: boolean,
 ) {
   // Create shader object
-  let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader, webgl2);
-  let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader, webgl2);
+  let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+  let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
   if (!vertexShader || !fragmentShader) {
     return null;
   }
@@ -66,7 +64,6 @@ export function loadShader(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   type: number,
   source: string,
-  webgl2: boolean,
 ) {
   // Create shader object
   let shader = gl.createShader(type);
@@ -75,12 +72,7 @@ export function loadShader(
   }
 
   // Set the shader program
-  if (webgl2) {
-    gl.shaderSource(shader, '#version 300 es\n#define IS_WEBGL2\n' + source);
-  }
-  else {
-    gl.shaderSource(shader, source);
-  }
+  gl.shaderSource(shader, source);
 
   // Compile the shader
   gl.compileShader(shader);
@@ -240,7 +232,7 @@ export function drawTextureCache(
     vtTex[5] = 1;
     vtTex[6] = 1;
     vtTex[7] = 0;
-  } console.log(vtPoint, vtTex)
+  }
   // 顶点buffer
   const pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -310,7 +302,7 @@ for (let i = 0; i < indices.length; i++) {
   }
 }
 
-function drawPR(
+function drawPrItem(
   gl: WebGL2RenderingContext,
   cx: number,
   cy: number,
@@ -450,7 +442,7 @@ function drawPR(
   gl.drawElements(gl.TRIANGLE_STRIP, length * 5 - 1, gl.UNSIGNED_SHORT, 0);
 }
 
-export function drawTextureCache2(
+export function drawPr(
   gl: WebGL2RenderingContext,
   cx: number,
   cy: number,
@@ -466,7 +458,7 @@ export function drawTextureCache2(
   // 每16个分为一组，进行图元重启一次DrawCall
   const num = Math.floor(list.length / MAX_TEXTURE_IMAGE_UNITS);
   for (let i = 0; i < num; i++) {
-    drawPR(
+    drawPrItem(
       gl,
       cx,
       cy,
@@ -477,7 +469,7 @@ export function drawTextureCache2(
   // 末尾零散的不够16个的
   const rem = list.length % MAX_TEXTURE_IMAGE_UNITS;
   if (rem) {
-    drawPR(
+    drawPrItem(
       gl,
       cx,
       cy,

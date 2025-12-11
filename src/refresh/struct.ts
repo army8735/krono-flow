@@ -4,7 +4,7 @@ import { genMerge, shouldIgnore } from './merge';
 import { checkInScreen } from './check';
 import { assignMatrix, isE, multiply } from '../math/matrix';
 import Container from '../node/Container';
-import { DrawData, drawTextureCache, drawTextureCache2 } from '../gl/webgl';
+import { DrawData, drawTextureCache, drawPr } from '../gl/webgl';
 import CacheProgram from '../gl/CacheProgram';
 
 export type Struct = {
@@ -23,7 +23,7 @@ export function renderWebgl(
   const cx = W * 0.5;
   const cy = H * 0.5;
   const programs = root.programs;
-  const main = programs.main;
+  const { main, pr } = programs;
   CacheProgram.useProgram(gl, main);
   const drawCallList: DrawData[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
@@ -95,9 +95,11 @@ export function renderWebgl(
       i += total;
     }
   }
-  // 实例化数组减少drawCall
+  // 减少drawCall
   if (isWebgl2) {
-    drawTextureCache2(gl as WebGL2RenderingContext, cx, cy, main, drawCallList);
+    CacheProgram.useProgram(gl, pr);
+    drawPr(gl as WebGL2RenderingContext, cx, cy, pr, drawCallList);
+    CacheProgram.useProgram(gl, main);
   }
 }
 
@@ -127,17 +129,13 @@ function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
   if (!hasCacheMw) {
     const ppm = parent ? parent.perspectiveMatrix : undefined;
     let matrix = node.matrix;
-    // console.log(i, ppm, matrix)
     if (ppm && !isE(ppm)) {
-      // console.warn(ppm)
       matrix = multiply(ppm, matrix);
     }
-    // console.log(matrix);
     assignMatrix(
       node._matrixWorld,
       parent ? multiply(parent._matrixWorld, matrix) : matrix,
     );
-    // console.log(node._matrixWorld);
     if (parent) {
       node.parentMwId = parent.localMwId;
     }

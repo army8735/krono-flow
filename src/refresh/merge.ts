@@ -8,7 +8,7 @@ import { mergeBbox } from '../math/bbox';
 import TextureCache, { SubTexture } from './TextureCache';
 import config from '../config';
 import {
-  createTexture,
+  createTexture, DrawData,
   drawMbm,
   drawTextureCache,
   // texture2Blob,
@@ -196,7 +196,8 @@ function genBboxTotal(
     // 已有省略计算
     if (isNew) {
       const parent = node2.parent!;
-      const m = multiply(parent.tempMatrix, node2.matrix);
+      const ppm = parent.perspectiveMatrix;
+      const m = multiply(parent.tempMatrix, ppm ? multiply(ppm, node2.matrix) : node2.matrix);
       assignMatrix(node2.tempMatrix, m);
       // 合并不能用textureCache，因为如果有shadow的话bbox不正确
       const b = (target && target !== node2.textureCache) ?
@@ -270,7 +271,8 @@ function genTotal(
     return target;
   }
   const programs = root.programs;
-  const program = programs.program;
+  const main = programs.main;
+  CacheProgram.useProgram(gl, main);
   // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
   const x = bbox[0],
     y = bbox[1];
@@ -331,7 +333,8 @@ function genTotal(
     else {
       const parent = node2.parent!;
       opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
-      matrix = multiply(parent.tempMatrix, node2.matrix);
+      const ppm = parent.perspectiveMatrix;
+      matrix = multiply(parent.tempMatrix, ppm ? multiply(ppm, node2.matrix) : node2.matrix);
     }
     assignMatrix(node2.tempMatrix, matrix);
     let target2 = node2.textureTarget;
@@ -352,7 +355,7 @@ function genTotal(
           cy = h * 0.5;
         // 再循环当前target的分块
         for (let k = 0, len = list2.length; k < len; k++) {
-          const { bbox: bbox2, t: t2 } = list2[k];
+          const { bbox: bbox2, t: t2, tc } = list2[k];
           if (t2 && checkInRect(bbox2, matrix, x, y, w, h)) {
             if (!t) {
               t = rect.t = createTexture(gl, 0, undefined, w, h);
@@ -387,22 +390,16 @@ function genTotal(
               gl,
               cx,
               cy,
-              program,
-              // [
-                {
-                  opacity,
-                  matrix,
-                  bbox: bbox2,
-                  t: t2,
-                },
-              // ],
-              // -rect.x,
-              // -rect.y,
-              // false,
-              // i > index ? x1 : -1, // 子节点可能的裁剪，忽略本身
-              // i > index ? y1 : -1,
-              // i > index ? x2 : 1,
-              // i > index ? y2 : 1,
+              main,
+              {
+                opacity,
+                matrix,
+                bbox: bbox2,
+                t: t2,
+                tc,
+                dx: -rect.x,
+                dy: -rect.y,
+              },
             );
             // 这里才是真正生成mbm
             if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
