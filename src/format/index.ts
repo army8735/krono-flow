@@ -176,6 +176,7 @@ export type JStyle = {
   transformOrigin: ([Origin, Origin]) | string;
   perspective: number;
   perspectiveOrigin: ([Origin, Origin]) | string;
+  perspectiveSelf: number;
   mixBlendMode:
     | 'normal'
     | 'multiply'

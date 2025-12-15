@@ -128,13 +128,17 @@ function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
   }
   if (!hasCacheMw) {
     const ppm = parent?.perspectiveMatrix;
-    let matrix = node.matrix;
-    if (ppm && !isE(ppm)) {
-      matrix = multiply(ppm, matrix);
+    const pm = node.perspectiveMatrixSelf;
+    let m = node.matrix;
+    if (pm) {
+      m = multiply(pm, m);
+    }
+    if (ppm) {
+      m = multiply(ppm, m);
     }
     assignMatrix(
       node._matrixWorld,
-      parent ? multiply(parent._matrixWorld, matrix) : matrix,
+      parent ? multiply(parent._matrixWorld, m) : m,
     );
     if (parent) {
       node.parentMwId = parent.localMwId;

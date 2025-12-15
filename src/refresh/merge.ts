@@ -196,11 +196,9 @@ function genBboxTotal(
   const res = (node.tempBbox || node._bbox || node.bbox).slice(0);
   toE(node.tempMatrix);
   // overflow加速
-  if (node.computedStyle.overflow === OVERFLOW.HIDDEN) {
+  if (node.computedStyle.overflow === OVERFLOW.HIDDEN || node.computedStyle.overflow === OVERFLOW.CLIP) {
     return res;
   }
-  // console.log(node.perspectiveMatrix)
-  const pm = node.perspectiveMatrix;
   for (let i = index + 1, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2 } = structs[i];
     const target = node2.textureTarget;
@@ -208,9 +206,17 @@ function genBboxTotal(
     if (isNew) {
       const parent = node2.parent!;
       const ppm = parent.perspectiveMatrix;
+      const pm = node2.perspectiveMatrixSelf;
       // console.log(i, ppm);
-      const m = multiply(parent.tempMatrix, ppm ? multiply(ppm, node2.matrix) : node2.matrix);
-      assignMatrix(node2.tempMatrix, m);
+      let m = node2.matrix;
+      if (pm) {
+        m = multiply(pm, m);
+      }
+      if (ppm) {
+        m = multiply(ppm, m);
+      }
+      const t = multiply(parent.tempMatrix, m);
+      assignMatrix(node2.tempMatrix, t);
       // 合并不能用textureCache，因为如果有shadow的话bbox不正确
       const b = (target && target !== node2.textureCache) ?
         target.bbox : (node2._filterBboxInt || node2.filterBboxInt);
@@ -334,24 +340,38 @@ function genTotal(
       toE(node2.tempMatrix);
       matrix = node2.tempMatrix;
       // 透视的origin要重算
+      if (computedStyle.perspectiveSelf >= 1) {
+        const tfo = computedStyle.transformOrigin;
+        const pm = calPerspectiveMatrix(computedStyle.perspectiveSelf, tfo[0] - x, tfo[1] - y);
+        assignMatrix(matrix, pm);
+      }
       if (computedStyle.perspective >= 1) {
         const pfo = computedStyle.perspectiveOrigin;
-        const pm = calPerspectiveMatrix(computedStyle.perspective, pfo[0] - x, pfo[1] - y);
-        assignMatrix(matrix, pm);
+        const ppm = calPerspectiveMatrix(computedStyle.perspective, pfo[0] - x, pfo[1] - y);
+        const t = multiply(ppm, matrix);
+        assignMatrix(matrix, t);
       }
     }
     // 子节点的matrix计算比较复杂，可能dx/dy不是0原点，造成transformOrigin偏移需重算matrix
     else {
       const parent = node2.parent!;
       opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
+      let pm: Float32Array | undefined;
+      if (computedStyle.perspectiveSelf >= 1) {
+        const tfo = computedStyle.transformOrigin;
+        pm = calPerspectiveMatrix(computedStyle.perspectiveSelf, tfo[0] - x, tfo[1] - y);
+      }
       const transform = node2.transform;
       if (!isE(transform)) {
         const tfo = computedStyle.transformOrigin;
         const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
-        matrix = multiply(parent.tempMatrix, m);
+        matrix = multiply(parent.tempMatrix, pm ? multiply(pm, m) : m);
       }
       else {
         matrix = parent.tempMatrix;
+        if (pm) {
+          matrix = multiply(matrix, pm);
+        }
       }
     }
     assignMatrix(node2.tempMatrix, matrix);

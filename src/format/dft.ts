@@ -47,6 +47,7 @@ export const DEFAULT_STYLE = {
   transformOrigin: ['center', 'center'],
   perspective: 0,
   perspectiveOrigin: ['center', 'center'],
+  perspectiveSelf: 0,
   mixBlendMode: 'normal',
   pointerEvents: true,
   objectFit: 'fill',

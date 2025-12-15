@@ -211,6 +211,7 @@ export type Style = {
   transformOrigin: [StyleNumValue, StyleNumValue];
   perspective: StyleNumValue;
   perspectiveOrigin: [StyleNumValue, StyleNumValue];
+  perspectiveSelf: StyleNumValue;
   pointerEvents: StyleBoolValue;
   mixBlendMode: StyleMbmValue;
   objectFit: StyleObjectFitValue;
@@ -273,8 +274,9 @@ export type ComputedStyle = {
   rotateY: number;
   rotateZ: number;
   transformOrigin: [number, number];
-  perspective: number,
+  perspective: number;
   perspectiveOrigin: [number, number];
+  perspectiveSelf: number;
   mixBlendMode: MIX_BLEND_MODE;
   pointerEvents: boolean;
   objectFit: OBJECT_FIT;
@@ -395,6 +397,7 @@ export enum TEXT_DECORATION {
 export enum OVERFLOW {
   VISIBLE = 0,
   HIDDEN = 1,
+  CLIP = 2,
 }
 
 export enum OBJECT_FIT {

@@ -35,7 +35,7 @@ function compatibleTransform(k: string, v: StyleNumValue) {
     v.u = StyleUnit.NUMBER;
   }
   else if (k === 'translateX' || k === 'translateY' || k === 'translateZ'
-    || k === 'perspective') {
+    || k === 'perspective' || k === 'perspectiveSelf') {
     if (v.u === StyleUnit.NUMBER) {
       v.u = StyleUnit.PX;
     }
@@ -426,7 +426,7 @@ export function normalize(style: Partial<JStyle>) {
     res.strokeMiterlimit = { v: style.strokeMiterlimit, u: StyleUnit.NUMBER };
   }
   (['translateX', 'translateY', 'translateZ', 'skewX', 'skewY', 'scaleX', 'scaleY', 'rotateX', 'rotateY', 'rotateZ',
-    'perspective'] as const).forEach((k) => {
+    'perspective', 'perspectiveSelf'] as const).forEach((k) => {
     const v = style[k];
     if (v === undefined) {
       return;

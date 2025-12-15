@@ -71,6 +71,7 @@ class Node extends Event {
   matrix: Float32Array; // 包含transformOrigin
   _matrixWorld: Float32Array; // 世界transform
   perspectiveMatrix?: Float32Array; // 透视矩阵作用于所有孩子
+  perspectiveMatrixSelf?: Float32Array;
   hasCacheMw: boolean; // 是否计算过世界matrix
   localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
   parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
@@ -351,6 +352,9 @@ class Node extends Event {
     if (lv & RefreshLevel.REFLOW_PERSPECTIVE) {
       this.calPerspective();
     }
+    if (lv & RefreshLevel.REFLOW_PERSPECTIVE_SELF) {
+      this.calPerspectiveSelf();
+    }
     // 同matrix
     if (lv & RefreshLevel.REFLOW_OPACITY) {
       this.calOpacity();
@@ -550,14 +554,14 @@ class Node extends Event {
           multiplyScaleY(transform, scaleY);
         }
       }
-      let t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
+      const t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
       assignMatrix(matrix, t);
     }
   }
 
   // 和matrix计算很像，但没有特殊优化，同样影响matrixWorld
   calPerspective() {
-    const { style, computedStyle, transform } = this;
+    const { style, computedStyle } = this;
     if (this.hasCacheMw || !this.localMwId) {
       this.hasCacheMw = false;
       this.localMwId++;
@@ -572,6 +576,22 @@ class Node extends Event {
     }
     else {
       this.perspectiveMatrix = undefined;
+    }
+  }
+
+  calPerspectiveSelf() {
+    const { style, computedStyle, transform } = this;
+    if (this.hasCacheMw || !this.localMwId) {
+      this.hasCacheMw = false;
+      this.localMwId++;
+    }
+    computedStyle.perspectiveSelf = calSize(style.perspectiveSelf, this.computedStyle.width);
+    if (computedStyle.perspectiveSelf >= 1) {
+      const tfo = computedStyle.transformOrigin;
+      this.perspectiveMatrixSelf = calPerspectiveMatrix(computedStyle.perspectiveSelf, tfo[0] + transform[12], tfo[1] + transform[13]);
+    }
+    else {
+      this.perspectiveMatrixSelf = undefined;
     }
   }
 
@@ -1466,7 +1486,15 @@ class Node extends Event {
           }
           else {
             const ppm = node.parent!.perspectiveMatrix;
-            const t = multiply(node.parent!._matrixWorld, ppm ? multiply(ppm, node.matrix) : node.matrix);
+            const pm = node.perspectiveMatrixSelf;
+            let m = node.matrix;
+            if (pm) {
+              m = multiply(pm, m);
+            }
+            if (ppm) {
+              m = multiply(ppm, m);
+            }
+            const t = multiply(node.parent!._matrixWorld, m);
             assignMatrix(node._matrixWorld, t);
             node.parentMwId = node.parent!.localMwId;
           }
@@ -1481,7 +1509,15 @@ class Node extends Event {
       parent = this.parent;
       if (parent) {
         const ppm = parent.perspectiveMatrix;
-        const t = multiply(parent._matrixWorld, ppm ? multiply(ppm, this.matrix) : this.matrix);
+        const pm = this.perspectiveMatrixSelf;
+        let m = this.matrix;
+        if (pm) {
+          m = multiply(pm, m);
+        }
+        if (ppm) {
+          m = multiply(ppm, m);
+        }
+        const t = multiply(parent._matrixWorld, m);
         assignMatrix(m, t);
         this.parentMwId = parent.localMwId; // 更新以便后续对比
       }
