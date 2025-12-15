@@ -1,5 +1,4 @@
 import { calRectPoints } from '../math/matrix';
-import { color2gl } from '../style/color';
 import inject from '../util/inject';
 import CacheProgram from './CacheProgram';
 
@@ -820,28 +819,6 @@ function bbox2Coords(
   const t3 = pointNDC(x3 + offsetX, y3 + offsetY, z3 || 0, w3 || 1, cx, cy, cz);
   const t4 = pointNDC(x4 + offsetX, y4 + offsetY, z4 || 0, w4 || 1,  cx, cy, cz);
   return { t1, t2, t3, t4 };
-}
-
-function offsetCoords(
-  coords: {
-    t1: { x: number, y: number, z?: number, w?: number },
-    t2: { x: number, y: number, z?: number, w?: number },
-    t3: { x: number, y: number, z?: number, w?: number },
-    t4: { x: number, y: number, z?: number, w?: number },
-  },
-  dx = 0,
-  dy = 0,
-) {
-  if (dx || dy) {
-    const { t1, t2, t3, t4 } = coords;
-    return {
-      t1: { x: t1.x + dx, y: t1.y + dy, z: t1.z || 0, w: t1.w },
-      t2: { x: t2.x + dx, y: t2.y + dy, z: t2.z || 0, w: t2.w },
-      t3: { x: t3.x + dx, y: t3.y + dy, z: t3.z || 0, w: t3.w },
-      t4: { x: t4.x + dx, y: t4.y + dy, z: t4.z || 0, w: t4.w },
-    };
-  }
-  return coords;
 }
 
 // 从已绑定的framebuffer中获取当前图像数据debug

@@ -2,7 +2,7 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import { genMerge, shouldIgnore } from './merge';
 import { checkInScreen } from './check';
-import { assignMatrix, isE, multiply } from '../math/matrix';
+import { assignMatrix, multiply } from '../math/matrix';
 import Container from '../node/Container';
 import { DrawData, drawTextureCache, drawPr } from '../gl/webgl';
 import CacheProgram from '../gl/CacheProgram';

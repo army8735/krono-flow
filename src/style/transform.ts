@@ -2,14 +2,9 @@ import { d2r } from '../math/geom';
 import {
   identity,
   isE,
-  multiplyRotateZ,
-  multiplyScaleX,
-  multiplyScaleY,
   multiplyTfo,
   tfoMultiply,
 } from '../math/matrix';
-import { Style } from './define';
-import { calSize } from './css';
 
 export function calRotateX(t: Float32Array, v: number) {
   return calRotateXRadian(t, d2r(v));

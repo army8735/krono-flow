@@ -439,7 +439,7 @@ function genTotal(
                 dy: -rect.y,
               },
             );
-            texture2Blob(gl, w, h);
+            // texture2Blob(gl, w, h);
             // 这里才是真正生成mbm
             if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
               t = rect.t = genMbm(
