@@ -1487,14 +1487,14 @@ class Node extends Event {
           else {
             const ppm = node.parent!.perspectiveMatrix;
             const pm = node.perspectiveMatrixSelf;
-            let m = node.matrix;
+            let mt = node.matrix;
             if (pm) {
-              m = multiply(pm, m);
+              mt = multiply(pm, mt);
             }
             if (ppm) {
-              m = multiply(ppm, m);
+              mt = multiply(ppm, mt);
             }
-            const t = multiply(node.parent!._matrixWorld, m);
+            const t = multiply(node.parent!._matrixWorld, mt);
             assignMatrix(node._matrixWorld, t);
             node.parentMwId = node.parent!.localMwId;
           }
@@ -1510,19 +1510,25 @@ class Node extends Event {
       if (parent) {
         const ppm = parent.perspectiveMatrix;
         const pm = this.perspectiveMatrixSelf;
-        let m = this.matrix;
+        let mt = this.matrix;
         if (pm) {
-          m = multiply(pm, m);
+          mt = multiply(pm, mt);
         }
         if (ppm) {
-          m = multiply(ppm, m);
+          mt = multiply(ppm, mt);
         }
-        const t = multiply(parent._matrixWorld, m);
+        const t = multiply(parent._matrixWorld, mt);
         assignMatrix(m, t);
         this.parentMwId = parent.localMwId; // 更新以便后续对比
       }
       else {
-        assignMatrix(m, this.matrix);
+        const pm = this.perspectiveMatrixSelf;
+        if (pm) {
+          assignMatrix(m, multiply(pm, this.matrix));
+        }
+        else {
+          assignMatrix(m, this.matrix);
+        }
       }
     }
     return m;
