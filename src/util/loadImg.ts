@@ -33,7 +33,7 @@ function isGif(uint8array: Uint8Array) {
 
 export function getCacheImg(url: string) {
   const o = HASH[url];
-  if (o.state === State.LOADED) {
+  if (o?.state === State.LOADED) {
     return o.res;
   }
 }
