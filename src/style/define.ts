@@ -491,6 +491,14 @@ export const RICH_KEYS = [
   'strokeEnable',
 ];
 
+export enum CURVE_MODE {
+  NONE = 0,
+  STRAIGHT = 1,
+  MIRRORED = 2,
+  ASYMMETRIC = 3,
+  DISCONNECTED = 4,
+}
+
 export default {
   StyleUnit,
   TEXT_ALIGN,

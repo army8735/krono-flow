@@ -6,6 +6,7 @@ import Video from './Video';
 import Audio from './Audio';
 import Text from './Text';
 import Lottie from './Lottie';
+import Polyline from './geom/Polyline';
 
 export default {
   Container,
@@ -16,4 +17,5 @@ export default {
   Audio,
   Text,
   Lottie,
+  Polyline,
 };

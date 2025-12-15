@@ -1,4 +1,4 @@
-import { ComputedRich, JRich, JStyle, Rich, } from '../format';
+import { ComputedRich, JPoint, JRich, JStyle, Point, Rich, } from '../format';
 import inject from '../util/inject';
 import { clone, isNil, isString } from '../util/type';
 import {
@@ -6,7 +6,7 @@ import {
   calUnit,
   ComputedBlur,
   ComputedGradient,
-  ComputedStyle,
+  ComputedStyle, CURVE_MODE,
   FILL_RULE,
   FONT_STYLE,
   MIX_BLEND_MODE,
@@ -1025,6 +1025,39 @@ export function getCssStrokePosition(o: STROKE_POSITION) {
   return (['center', 'inside', 'outside'][o] || 'inside') as 'center' | 'inside' | 'outside';
 }
 
+export function normalizePoints(item: JPoint) {
+  return {
+    x: item.x,
+    y: item.y,
+    cornerRadius: item.cornerRadius || 0,
+    fx: item.fx ?? item.x,
+    fy: item.fy ?? item.y,
+    tx: item.tx ?? item.x,
+    ty: item.ty ?? item.y,
+    hasCurveFrom: item.hasCurveFrom || false,
+    hasCurveTo: item.hasCurveTo || false,
+    curveMode: ({
+      'none': CURVE_MODE.NONE,
+      'straight': CURVE_MODE.STRAIGHT,
+      'mirrored': CURVE_MODE.MIRRORED,
+      'asymmetric': CURVE_MODE.ASYMMETRIC,
+      'disconnected': CURVE_MODE.DISCONNECTED,
+    }[item.curveMode || 'none'] || CURVE_MODE.NONE) as Point['curveMode'],
+    absX: 0,
+    absY: 0,
+    absFx: 0,
+    absFy: 0,
+    absTx: 0,
+    absTy: 0,
+    dspX: 0,
+    dspY: 0,
+    dspFx: 0,
+    dspFy: 0,
+    dspTx: 0,
+    dspTy: 0,
+  };
+}
+
 export default {
   normalize,
   equalStyle,
@@ -1035,4 +1068,5 @@ export default {
   getCssFillStroke,
   getCssStrokePosition,
   getCssBlur,
+  normalizePoints,
 };

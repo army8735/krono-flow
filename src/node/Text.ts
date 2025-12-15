@@ -1029,20 +1029,9 @@ class Text extends Node {
     const dx = -x,
       dy = -y;
     const { computedStyle, lineBoxList } = this;
-    const canvasCache = (this.canvasCache = new CanvasCache(w, h, dx, dy));
+    const canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
     canvasCache.available = true;
     const list = canvasCache.list;
-    if (computedStyle.backgroundColor[3] > 0) {
-      const coords = this.getBackgroundCoords(x, y);
-      list.forEach(item => {
-        const { x, y, os: { ctx } } = item;
-        ctx.fillStyle = color2rgbaStr(computedStyle.backgroundColor);
-        ctx.beginPath();
-        canvasPolygon(ctx, coords, 1, -x, -y);
-        ctx.closePath();
-        ctx.fill();
-      });
-    }
 
     // 如果处于选择范围状态，渲染背景
     const {

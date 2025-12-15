@@ -1,6 +1,6 @@
 import { DEFAULT_STYLE } from './dft';
 import {
-  ComputedStyle,
+  ComputedStyle, CURVE_MODE,
   Style,
 } from '../style/define';
 import { VideoAudioMeta } from '../decoder';
@@ -14,6 +14,45 @@ export type Props = {
 
 export type RootProps = Props & {
   contextAttributes?: any,
+}
+
+export type JPoint = {
+  x: number;
+  y: number;
+  cornerRadius?: number;
+  curveMode?: 'none' | 'straight' | 'mirrored' | 'asymmetric' | 'disconnected';
+  fx?: number; // from控制点
+  fy?: number;
+  tx?: number; // to控制点
+  ty?: number;
+  hasCurveFrom?: boolean;
+  hasCurveTo?: boolean;
+};
+
+export type Point = Omit<JPoint, 'curveMode'> & {
+  curveMode: CURVE_MODE;
+  cornerRadius: number;
+  fx: number;
+  fy: number;
+  tx: number;
+  ty: number;
+  absX: number; // 算上宽高的绝对像素值
+  absY: number;
+  absFx: number;
+  absFy: number;
+  absTx: number;
+  absTy: number;
+  dspX: number; // 绝对值和相对于AP的matrix的值，展示在面板上
+  dspY: number;
+  dspFx: number;
+  dspFy: number;
+  dspTx: number;
+  dspTy: number;
+};
+
+export type PolylineProps = Props & {
+  isClosed: boolean;
+  points: JPoint[];
 }
 
 export type BitmapProps = Props & {

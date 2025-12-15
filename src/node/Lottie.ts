@@ -217,7 +217,7 @@ class Lottie extends Node {
         const { x, y, os: { ctx } } = item;
         ctx.fillStyle = color2rgbaStr(computedStyle.backgroundColor);
         ctx.beginPath();
-        canvasPolygon(ctx, coords, 1, -x, -y);
+        canvasPolygon(ctx, coords, -x, -y);
         ctx.closePath();
         ctx.fill();
       });

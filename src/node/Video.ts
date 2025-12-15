@@ -324,20 +324,9 @@ class Video extends Node {
           }
         }
       }
-      const canvasCache = (this.canvasCache = new CanvasCache(w, h, -x, -y));
+      const canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
       canvasCache.available = true;
       const list = canvasCache.list;
-      if (computedStyle.backgroundColor[3] > 0) {
-        const coords = this.getBackgroundCoords(x, y);
-        list.forEach(item => {
-          const { x, y, os: { ctx } } = item;
-          ctx.fillStyle = color2rgbaStr(computedStyle.backgroundColor);
-          ctx.beginPath();
-          canvasPolygon(ctx, coords, 1, -x, -y);
-          ctx.closePath();
-          ctx.fill();
-        });
-      }
       for (let i = 0, len = list.length; i < len; i++) {
         const { x, y, os: { ctx } } = list[i];
         const dx2 = -x;
