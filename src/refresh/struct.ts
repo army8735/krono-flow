@@ -28,7 +28,7 @@ export function renderWebgl(
   CacheProgram.useProgram(gl, main);
   const drawCallList: DrawData[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
-    const { node, total } = structs[i];
+    const { node, total, next } = structs[i];
     // 不可见和透明的跳过
     const computedStyle = node.computedStyle;
     if (shouldIgnore(computedStyle)) {
@@ -36,7 +36,7 @@ export function renderWebgl(
         const node = structs[j].node;
         calWorldMatrixAndOpacity(node, j, node.parent);
       }
-      i += total;
+      i += total + next;
       continue;
     }
     const { parent } = node;
@@ -93,7 +93,7 @@ export function renderWebgl(
     }
     // 有局部子树缓存可以跳过其所有子孙节点
     if (target?.available && target !== node.textureCache) {
-      i += total;
+      i += total + next;
     }
   }
   // 减少drawCall

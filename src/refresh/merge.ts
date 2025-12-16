@@ -13,7 +13,7 @@ import {
   drawMask,
   drawMbm,
   drawTextureCache,
-  texture2Blob,
+  // texture2Blob,
 } from '../gl/webgl';
 import inject from '../util/inject';
 import { genGaussBlur, genMotionBlur, genRadialBlur } from './blur';
@@ -47,7 +47,7 @@ export function genMerge(
   const mergeList: Merge[] = [];
   const mergeHash: Merge[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
-    const { node, lv, total } = structs[i];
+    const { node, lv, total, next } = structs[i];
     const { refreshLevel, computedStyle, textureTotal, textureFilter, textureMask } = node;
     node.refreshLevel = RefreshLevel.NONE;
     // 无任何变化即refreshLevel为NONE（0）忽略
@@ -115,6 +115,9 @@ export function genMerge(
     }
     if (textureTotal?.available) {
       i += total;
+    }
+    if (textureMask?.available) {
+      i += next;
     }
   }
   // 后根顺序，即叶子节点在前，兄弟的后节点在前
@@ -219,7 +222,7 @@ export function genMerge(
         H,
       );
       if (t) {
-        node.textureFilter = node.textureTarget = t;
+        node.textureMask = node.textureTarget = t;
         res = t;
       }
     }
@@ -245,8 +248,8 @@ function genNextCount(
       node.struct.next = i - index - total - 1;
       break;
     }
-    else if (i === len || (computedStyle.breakMask && lv === lv2)) {
-      node.struct.next = i - index - total - 1;
+    else if (i === (len - 1) || (computedStyle.breakMask && lv === lv2)) {
+      node.struct.next = i - index - total;
       break;
     }
   }
@@ -398,11 +401,11 @@ function genTotal(
   }
   // 再外循环按节点序，内循环按分块，确保节点序内容先渲染，从而正确生成分块的bgBlur
   for (let i = index, len = index + total + 1; i < len; i++) {
-    const { node: node2, total: total2 } = structs[i];
+    const { node: node2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
     // 这里和主循环类似，不可见或透明考虑跳过
     if (shouldIgnore(computedStyle)) {
-      i += total2;
+      i += total2 + next2;
       continue;
     }
     let opacity: number, matrix: Float32Array;
@@ -530,7 +533,7 @@ function genTotal(
     }
     // 有局部子树缓存可以跳过其所有子孙节点
     if (target2?.available && target2 !== node2.textureCache) {
-      i += total2;
+      i += total2 + next2;
     }
   }
   // texture2Blob(gl, w, h);
@@ -899,6 +902,7 @@ export function genMask(
   }
   // alpha/alpha-with
   else {
+    CacheProgram.useProgram(gl, programs.mask);
     // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
     for (let i = 0, len = listS.length; i < len; i++) {
       const { bbox, w, h, t } = listS[i];
@@ -916,7 +920,6 @@ export function genMask(
       else {
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
-      CacheProgram.useProgram(gl, programs.mask);
       drawMask(gl, programs.mask, listM[i].t!, t!);
       listR.push({
         bbox: bbox.slice(0),

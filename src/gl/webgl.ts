@@ -516,7 +516,10 @@ export function drawMask(
   const u_texture2 = cacheProgram.uniform.u_texture2;
   gl.uniform1i(u_texture2, 1);
   const u_d = cacheProgram.uniform.u_d;
-  gl.uniform2f(u_d, dx, dy);
+  // 仅gray有
+  if (u_d !== undefined) {
+    gl.uniform2f(u_d, dx, dy);
+  }
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);

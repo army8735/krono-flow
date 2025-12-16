@@ -226,11 +226,19 @@ class Root extends Container {
         if (lv & RefreshLevel.FILTER) {
           node.calFilter(lv);
         }
+        if (lv & RefreshLevel.MASK) {
+        }
       }
     }
+    // 除root的reflow外，任何reflow/repaint都要向上清除
     node.clearTexCacheUpward();
     node.refreshLevel |= lv;
     this.rl |= lv;
+    // 检查mask影响，这里是作为被遮罩对象存在的关系检查，不会有连续，mask不能同时被mask
+    let mask = node.mask;
+    if (mask && lv && !(lv & RefreshLevel.MASK) && !(lv & RefreshLevel.BREAK_MASK)) {
+      mask.clearMask();
+    }
     let parent = node.parent;
     while (parent) {
       if (parent.computedStyle.visibility === VISIBILITY.HIDDEN) {
@@ -374,10 +382,13 @@ class Root extends Container {
     });
     this.programs.mask = new CacheProgram(gl, initShaders(gl, simpleVert, maskFrag), {
       uniform: ['u_texture1', 'u_texture2'],
+      attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.maskGray = new CacheProgram(gl, initShaders(gl, simpleVert, maskGrayFrag), {
       uniform: ['u_texture1', 'u_texture2', 'u_d'],
+      attrib: ['a_position', 'a_texCoords'],
     });
+    gl.disable(gl.BLEND);
     CacheProgram.useProgram(gl, this.programs.main);
   }
 

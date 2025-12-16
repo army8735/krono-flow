@@ -1097,6 +1097,26 @@ class Node extends Event {
     }
   }
 
+  clearMask(upwards = true) {
+    this.textureMask?.release();
+    this.resetTextureTarget();
+    this.struct.next = 0;
+    this.refreshLevel |= RefreshLevel.MASK;
+    // mask切换影响父级组的bbox
+    if (upwards) {
+      let p = this.parent;
+      while (p && p !== this.root) {
+        p._rect = undefined;
+        p._bbox = undefined;
+        p._bboxInt = undefined;
+        p._filterBbox = undefined;
+        p._filterBboxInt = undefined;
+        p.tempBbox = undefined;
+        p = p.parent;
+      }
+    }
+  }
+
   refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void)) {
     this.root?.addUpdate(this, [], lv, cb);
   }

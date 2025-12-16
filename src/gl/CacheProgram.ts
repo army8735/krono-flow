@@ -30,7 +30,6 @@ export class CacheProgram {
     if (this.options.uniform) {
       this.options.uniform.forEach(k => {
         this.uniform[k] = gl.getUniformLocation(this.program, k)!;
-        // console.log(k, this.uniform[k])
       });
     }
     if (this.options.attrib) {
@@ -44,8 +43,8 @@ export class CacheProgram {
     if (last !== cp) {
       last = cp;
       gl.useProgram(cp.program);
-      cp.initLocations(gl);
-      cp.uniformValue = {};
+      // cp.initLocations(gl);
+      // cp.uniformValue = {};
     }
   }
 }
