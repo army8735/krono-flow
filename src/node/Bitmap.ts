@@ -314,7 +314,7 @@ class Bitmap extends Node {
           }
         }
       }
-      const canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
+      const canvasCache = this.canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
       canvasCache.available = true;
       const list = canvasCache.list;
       for (let i = 0, len = list.length; i < len; i++) {

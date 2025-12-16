@@ -679,7 +679,7 @@ class Node extends Event {
   // 是否有内容，由各个子类自己实现
   calContent() {
     const { computedStyle } = this;
-    this.hasContent = computedStyle.backgroundColor[3] > 0;
+    this.hasContent = computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.backgroundColor[3] > 0;
     return this.hasContent;
   }
 
@@ -699,28 +699,29 @@ class Node extends Event {
       canvasCache.release();
     }
     if (this.hasContent) {
-      const bbox = this._bboxInt || this.bboxInt;
-      const x = bbox[0],
-        y = bbox[1];
-      const w = bbox[2] - x,
-        h = bbox[3] - y;
-      canvasCache = this.canvasCache = new CanvasCache(w, h, -x, -y);
-      canvasCache.available = true;
-      this.renderCanvasBgc(canvasCache);
+      // const bbox = this._bboxInt || this.bboxInt;
+      // const x = bbox[0],
+      //   y = bbox[1];
+      // const w = bbox[2] - x,
+      //   h = bbox[3] - y;
+      // canvasCache = this.canvasCache = new CanvasCache(w, h, -x, -y);
+      // canvasCache.available = true;
+      // this.renderCanvasBgc(canvasCache);
     }
   }
 
   renderCanvasBgc(canvasCache: CanvasCache) {
     const backgroundColor = this.computedStyle.backgroundColor;
+    console.log(this.name, backgroundColor)
     if (backgroundColor[3] > 0) {
       const coords = this.getBackgroundCoords(-canvasCache.dx, -canvasCache.dy);
       canvasCache.list.forEach(item => {
-        const { x, y, os: { ctx } } = item;
-        ctx.fillStyle = color2rgbaStr(backgroundColor);
-        ctx.beginPath();
-        canvasPolygon(ctx, coords, -x, -y);
-        ctx.closePath();
-        ctx.fill();
+        // const { x, y, os: { ctx } } = item;
+        // ctx.fillStyle = color2rgbaStr(backgroundColor);
+        // ctx.beginPath();
+        // canvasPolygon(ctx, coords, -x, -y);
+        // ctx.closePath();
+        // ctx.fill();
       });
     }
   }

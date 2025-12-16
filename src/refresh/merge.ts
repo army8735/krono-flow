@@ -873,7 +873,7 @@ export function genMask(
     CacheProgram.useProgram(gl, programs.maskGray);
     for (let i = 0, len = listS.length; i < len; i++) {
       const { bbox, w, h, t } = listS[i];
-      let tex;
+      let tex: WebGLTexture | undefined;
       if (listM[i] && listM[i].t && t) {
         tex = createTexture(gl, 0, undefined, w, h);
         if (frameBuffer) {

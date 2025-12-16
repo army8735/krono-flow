@@ -1010,10 +1010,11 @@ class Text extends Node {
 
   override calContent() {
     this.hasContent = false;
-    if (this.computedStyle.visibility === VISIBILITY.HIDDEN || this.computedStyle.opacity === 0) {
+    const { computedStyle } = this;
+    if (computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity === 0) {
       return this.hasContent;
     }
-    if (this._content || this.computedStyle.backgroundColor[3] > 0) {
+    if (this._content || computedStyle.backgroundColor[3] > 0) {
       this.hasContent = true;
     }
     return this.hasContent;
@@ -1029,7 +1030,7 @@ class Text extends Node {
     const dx = -x,
       dy = -y;
     const { computedStyle, lineBoxList } = this;
-    const canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
+    const canvasCache = this.canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
     canvasCache.available = true;
     const list = canvasCache.list;
 

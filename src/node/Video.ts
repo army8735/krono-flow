@@ -3,9 +3,7 @@ import { VideoProps } from '../format';
 import TextureCache from '../refresh/TextureCache';
 import { LayoutData } from '../refresh/layout';
 import { OBJECT_FIT, StyleUnit, VISIBILITY } from '../style/define';
-import { color2rgbaStr } from '../style/color';
 import { RefreshLevel } from '../refresh/level';
-import { canvasPolygon } from '../refresh/paint';
 import CanvasCache from '../refresh/CanvasCache';
 import { Options } from '../animation/AbstractAnimation';
 import TimeAnimation from '../animation/TimeAnimation';
@@ -324,7 +322,7 @@ class Video extends Node {
           }
         }
       }
-      const canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
+      const canvasCache = this.canvasCache = (this.canvasCache?.available ? this.canvasCache : new CanvasCache(w, h, -x, -y));
       canvasCache.available = true;
       const list = canvasCache.list;
       for (let i = 0, len = list.length; i < len; i++) {

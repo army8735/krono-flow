@@ -1,6 +1,7 @@
 import { DEFAULT_STYLE } from './dft';
 import {
-  ComputedStyle, CURVE_MODE,
+  ComputedStyle,
+  CURVE_MODE,
   Style,
 } from '../style/define';
 import { VideoAudioMeta } from '../decoder';
