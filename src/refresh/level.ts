@@ -1,7 +1,7 @@
 // prettier-ignore
 export enum RefreshLevel {
   NONE =                    0b0000000000000000000000,
-  CACHE =                   0b0000000000000000000001,
+  CACHE =                   0b0000000000000000000001, // 特殊跨帧渲染等级别，这里目前没用到
   TRANSLATE_X =             0b0000000000000000000010,
   TRANSLATE_Y =             0b0000000000000000000100,
   TRANSLATE =               0b0000000000000000000110,
@@ -33,6 +33,7 @@ export enum RefreshLevel {
   REFLOW_FILTER =           0b0010000100000000000000,
   ADD_DOM =                 0b0100000000000000000000,
   REMOVE_DOM =              0b1000000000000000000000,
+  FULL =                    0b1111111111111111111111,
 }
 
 export function isReflow(lv: number) {

@@ -211,6 +211,7 @@ class Root extends Container {
         node.calRepaintStyle(lv);
       }
       else {
+        const { style, computedStyle } = node;
         if (lv & RefreshLevel.TRANSFORM_ALL) {
           node.calMatrix(lv);
         }
@@ -226,7 +227,48 @@ class Root extends Container {
         if (lv & RefreshLevel.FILTER) {
           node.calFilter(lv);
         }
+        if (lv & RefreshLevel.MIX_BLEND_MODE) {
+          computedStyle.mixBlendMode = style.mixBlendMode.v;
+        }
+        let cleared = false;
         if (lv & RefreshLevel.MASK) {
+          node.clearMask();
+          cleared = true;
+          node.calMask();
+        }
+        if (lv & RefreshLevel.BREAK_MASK) {
+          const oldMask = node.mask;
+          node.calMask();
+          const newMask = node.mask;
+          // breakMask向前查找重置mask，必须是有效的，即设置为true时之前要有mask引用
+          if (computedStyle.breakMask && oldMask) {
+            oldMask.clearMask();
+          }
+          // 取消的话如果前面有mask才会有效即有newMask节点
+          else if (!computedStyle.breakMask && newMask) {
+            //
+          }
+          // 无效的视为无刷新
+          else {
+            lv = lv & (RefreshLevel.FULL ^ RefreshLevel.BREAK_MASK);
+          }
+          if (!computedStyle.breakMask || oldMask) {
+            let prev = node.prev;
+            while (prev) {
+              if (prev.computedStyle.maskMode) {
+                prev.clearMask();
+                break;
+              }
+              if (prev.computedStyle.breakMask) {
+                break;
+              }
+              prev = prev.prev;
+            }
+          }
+        }
+        // mask的任何其它变更都要清空重绘，必须CACHE以上，CACHE是跨帧渲染用级别
+        if (computedStyle.maskMode && !cleared && lv) {
+          node.clearMask();
         }
       }
     }
