@@ -712,7 +712,6 @@ class Node extends Event {
 
   renderCanvasBgc(canvasCache: CanvasCache) {
     const backgroundColor = this.computedStyle.backgroundColor;
-    console.log(this.name, backgroundColor)
     if (backgroundColor[3] > 0) {
       const coords = this.getBackgroundCoords(-canvasCache.dx, -canvasCache.dy);
       canvasCache.list.forEach(item => {
