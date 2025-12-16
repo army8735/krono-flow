@@ -699,14 +699,14 @@ class Node extends Event {
       canvasCache.release();
     }
     if (this.hasContent) {
-      // const bbox = this._bboxInt || this.bboxInt;
-      // const x = bbox[0],
-      //   y = bbox[1];
-      // const w = bbox[2] - x,
-      //   h = bbox[3] - y;
-      // canvasCache = this.canvasCache = new CanvasCache(w, h, -x, -y);
-      // canvasCache.available = true;
-      // this.renderCanvasBgc(canvasCache);
+      const bbox = this._bboxInt || this.bboxInt;
+      const x = bbox[0],
+        y = bbox[1];
+      const w = bbox[2] - x,
+        h = bbox[3] - y;
+      canvasCache = this.canvasCache = new CanvasCache(w, h, -x, -y);
+      canvasCache.available = true;
+      this.renderCanvasBgc(canvasCache);
     }
   }
 
@@ -716,12 +716,12 @@ class Node extends Event {
     if (backgroundColor[3] > 0) {
       const coords = this.getBackgroundCoords(-canvasCache.dx, -canvasCache.dy);
       canvasCache.list.forEach(item => {
-        // const { x, y, os: { ctx } } = item;
-        // ctx.fillStyle = color2rgbaStr(backgroundColor);
-        // ctx.beginPath();
-        // canvasPolygon(ctx, coords, -x, -y);
-        // ctx.closePath();
-        // ctx.fill();
+        const { x, y, os: { ctx } } = item;
+        ctx.fillStyle = color2rgbaStr(backgroundColor);
+        ctx.beginPath();
+        canvasPolygon(ctx, coords, -x, -y);
+        ctx.closePath();
+        ctx.fill();
       });
     }
   }

@@ -430,7 +430,6 @@ class Root extends Container {
       uniform: ['u_texture1', 'u_texture2', 'u_d'],
       attrib: ['a_position', 'a_texCoords'],
     });
-    gl.disable(gl.BLEND);
     CacheProgram.useProgram(gl, this.programs.main);
   }
 
