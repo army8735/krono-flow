@@ -9,6 +9,7 @@ import {
   ComputedStyle, CURVE_MODE,
   FILL_RULE,
   FONT_STYLE,
+  MASK,
   MIX_BLEND_MODE,
   OBJECT_FIT,
   OVERFLOW,
@@ -485,6 +486,26 @@ export function normalize(style: Partial<JStyle>) {
   }
   if (style.pointerEvents !== undefined) {
     res.pointerEvents = { v: style.pointerEvents, u: StyleUnit.BOOLEAN };
+  }
+  if (style.hasOwnProperty('maskMode')) {
+    const maskMode = style.maskMode;
+    let v = MASK.NONE;
+    if (maskMode === 'alpha') {
+      v = MASK.ALPHA;
+    }
+    else if (maskMode === 'gray') {
+      v = MASK.GRAY;
+    }
+    else if (maskMode === 'alpha-with') {
+      v = MASK.ALPHA_WITH;
+    }
+    else if (maskMode === 'gray-with') {
+      v = MASK.GRAY_WITH;
+    }
+    res.maskMode = { v, u: StyleUnit.NUMBER };
+  }
+  if (style.hasOwnProperty('breakMask')) {
+    res.breakMask = { v: !!style.breakMask, u: StyleUnit.BOOLEAN };
   }
   if (style.objectFit !== undefined) {
     res.objectFit = { v: getObjectFit(style.objectFit), u: StyleUnit.NUMBER };

@@ -20,6 +20,8 @@ import motionFrag from '../gl/motion.frag';
 import radialFrag from '../gl/radial.frag';
 import simpleVert from '../gl/simple.vert';
 import cmFrag from '../gl/cm.frag';
+import maskFrag from '../gl/mask.frag';
+import maskGrayFrag from '../gl/maskGray.frag';
 import AbstractAnimation from '../animation/AbstractAnimation';
 import AniController from '../animation/AniController';
 import { CAN_PLAY, REFRESH, REFRESH_COMPLETE, WAITING } from '../refresh/refreshEvent';
@@ -369,6 +371,12 @@ class Root extends Container {
     this.programs.cm = new CacheProgram(gl, initShaders(gl, simpleVert, cmFrag), {
       uniform: ['u_m', 'u_texture'],
       attrib: ['a_position', 'a_texCoords'],
+    });
+    this.programs.mask = new CacheProgram(gl, initShaders(gl, simpleVert, maskFrag), {
+      uniform: ['u_texture1', 'u_texture2'],
+    });
+    this.programs.maskGray = new CacheProgram(gl, initShaders(gl, simpleVert, maskGrayFrag), {
+      uniform: ['u_texture1', 'u_texture2', 'u_d'],
     });
     CacheProgram.useProgram(gl, this.programs.main);
   }

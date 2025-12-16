@@ -12,6 +12,7 @@ export type Struct = {
   num: number;
   total: number;
   lv: number;
+  next: number; // mask使用影响后续的节点数
 };
 
 export function renderWebgl(

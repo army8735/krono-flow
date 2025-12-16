@@ -213,6 +213,8 @@ export type Style = {
   perspectiveOrigin: [StyleNumValue, StyleNumValue];
   perspectiveSelf: StyleNumValue;
   pointerEvents: StyleBoolValue;
+  maskMode: StyleMaskValue;
+  breakMask: StyleBoolValue;
   mixBlendMode: StyleMbmValue;
   objectFit: StyleObjectFitValue;
   borderTopLeftRadius: StyleNumValue;
@@ -279,6 +281,8 @@ export type ComputedStyle = {
   perspectiveSelf: number;
   mixBlendMode: MIX_BLEND_MODE;
   pointerEvents: boolean;
+  maskMode: MASK;
+  breakMask: boolean;
   objectFit: OBJECT_FIT;
   borderTopLeftRadius: number;
   borderTopRightRadius: number;

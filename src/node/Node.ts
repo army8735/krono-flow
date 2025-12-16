@@ -15,12 +15,16 @@ import {
 } from '../style/css';
 import {
   ComputedGradient,
-  ComputedPattern,
-  ComputedStyle, FILL_RULE,
-  GRADIENT, MIX_BLEND_MODE, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION,
+  ComputedStyle,
+  FILL_RULE,
+  GRADIENT,
+  MIX_BLEND_MODE,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN,
+  STROKE_POSITION,
   Style,
   StyleUnit,
-  VISIBILITY
+  VISIBILITY,
 } from '../style/define';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
@@ -68,6 +72,7 @@ class Node extends Event {
   parent?: Container;
   prev?: Node;
   next?: Node;
+  mask?: Node;
   style: Style;
   computedStyle: ComputedStyle;
   struct: Struct;
@@ -91,6 +96,7 @@ class Node extends Event {
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
   textureTotal?: TextureCache; // 局部子树缓存
   textureFilter?: TextureCache; // 有filter时的缓存
+  textureMask?: TextureCache;
   textureTarget?: TextureCache; // 指向自身所有缓存中最优先的那个
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
   tempMatrix: Float32Array;
@@ -118,6 +124,7 @@ class Node extends Event {
       num: 0,
       total: 0,
       lv: 0,
+      next: 0,
     };
     this.isMounted = false;
     this.isDestroyed = false;
@@ -373,11 +380,65 @@ class Node extends Event {
     if (lv & RefreshLevel.REFLOW_FILTER) {
       this.calFilter(lv);
     }
+    if (lv & RefreshLevel.REFLOW_REPAINT_MASK) {
+      this.calMask();
+    }
     this._bbox = undefined;
     this._bboxInt = undefined;
     this._filterBbox = undefined;
     this._filterBboxInt = undefined;
     this.tempBbox = undefined;
+  }
+
+  calMask() {
+    const { style, computedStyle } = this;
+    computedStyle.maskMode = style.maskMode.v;
+    computedStyle.breakMask = style.breakMask.v;
+    // append时还得看prev的情况，如果自己也是mask，下面会修正，merge也会判断
+    let prev = this.prev;
+    if (prev && !computedStyle.breakMask) {
+      if (prev.computedStyle.maskMode) {
+        this.mask = prev;
+      }
+      else if (prev.mask) {
+        this.mask = prev.mask;
+      }
+    }
+    if (computedStyle.maskMode) {
+      // mask不能同时被mask
+      this.mask = undefined;
+      let next = this.next;
+      while (next) {
+        // 初始连续mask的情况，next的computedStyle还未生成，紧接着后续节点自己calMask()会修正
+        if (next.computedStyle.maskMode) {
+          next.mask = this;
+          break;
+        }
+        if (next.computedStyle.breakMask) {
+          break;
+        }
+        // 本身是mask的话，忽略breakMask，后续肯定都是自己的遮罩对象
+        next.mask = this;
+        next = next.next;
+      }
+    }
+    else {
+      // 不是mask的话，要看本身是否被遮罩，决定next是否有被遮罩
+      let target = computedStyle.breakMask ? undefined : this.mask;
+      this.mask = target;
+      let next = this.next;
+      while (next) {
+        if (next.computedStyle.maskMode) {
+          next.mask = target;
+          break;
+        }
+        if (next.computedStyle.breakMask) {
+          break;
+        }
+        next.mask = target;
+        next = next.next;
+      }
+    }
   }
 
   calFilter(lv: RefreshLevel) {

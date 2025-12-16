@@ -1,14 +1,16 @@
-import { BLUR, ComputedStyle, MIX_BLEND_MODE, OVERFLOW, VISIBILITY } from '../style/define';
+import { BLUR, ComputedStyle, MASK, MIX_BLEND_MODE, OVERFLOW, VISIBILITY } from '../style/define';
 import Node from '../node/Node';
+import Bitmap from '../node/Bitmap';
 import Root from '../node/Root';
 import { RefreshLevel } from './level';
-import { assignMatrix, isE, multiply, toE } from '../math/matrix';
+import { assignMatrix, identity, inverse, isE, multiply, toE } from '../math/matrix';
 import { Struct } from './struct';
 import { ceilBbox, mergeBbox } from '../math/bbox';
 import TextureCache, { SubTexture } from './TextureCache';
 import config from '../config';
 import {
   createTexture,
+  drawMask,
   drawMbm,
   drawTextureCache,
   texture2Blob,
@@ -46,7 +48,7 @@ export function genMerge(
   const mergeHash: Merge[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
-    const { refreshLevel, computedStyle, textureTotal, textureFilter } = node;
+    const { refreshLevel, computedStyle, textureTotal, textureFilter, textureMask } = node;
     node.refreshLevel = RefreshLevel.NONE;
     // 无任何变化即refreshLevel为NONE（0）忽略
     if (refreshLevel >= RefreshLevel.REPAINT) {
@@ -63,6 +65,7 @@ export function genMerge(
       brightness,
       contrast,
       overflow,
+      maskMode,
     } = computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
@@ -82,8 +85,21 @@ export function genMerge(
         (blur.t === BLUR.MOTION && blur.radius >= 1)
       ) &&
       !textureFilter?.available;
+    let needMask = maskMode > 0 && !textureMask?.available;
+    // 单个的alpha蒙版不渲染（没有next），target指向空的mask纹理汇总，循环时判空跳过
+    if (needMask) {
+      if (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask) {
+        needMask = false;
+        node.textureMask?.release();
+        node.textureMask = undefined;
+      }
+      // 后面的mask相当于breakMaskMode
+      else if (node.next && (node.next.computedStyle.breakMask || node.next.computedStyle.maskMode > 0)) {
+        needMask = false;
+      }
+    }
     const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
-    if (needTotal || needBlur || needColor) {
+    if (needTotal || needBlur || needMask || needColor) {
       const t: Merge = {
         i,
         lv,
@@ -127,19 +143,34 @@ export function genMerge(
   // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
-    const { node, isTop } = item;
+    const { node, isTop, i, lv, total } = item;
     if (isTop) {
       if (checkInRect(node.tempBbox!, node.matrixWorld, x1, y1, x2 - x1, y2 - y1)) {
         // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
         setValid(item);
+        // 如果是mask，还要看其是否影响被遮罩的merge，可能被遮罩在屏幕外面不可见
+        if (node.computedStyle.maskMode) {
+          genNextCount(node, structs, i, lv, total);
+          for (let k = j; k >= 0; k--) {
+            const item2 = mergeList[k];
+            if (item2.i > i + total + node.struct.next) {
+              break;
+            }
+            setValid(item2);
+          }
+        }
       }
     }
   }
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
-    const { i, total, node, valid } = mergeList[j];
+    const { i, lv, total, node, valid, isNew } = mergeList[j];
+    const { maskMode } = node.computedStyle;
     // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
     if (!valid) {
+      if (isNew && maskMode) {
+        genNextCount(node, structs, i, lv, total);
+      }
       continue;
     }
     // 不可见的，注意蒙版不可见时也生效
@@ -173,11 +204,52 @@ export function genMerge(
         res = t;
       }
     }
+    // 生成mask
+    if (maskMode && node.textureTarget?.available && !node.textureMask?.available && node.next) {
+      const t = genMask(
+        gl,
+        root,
+        node,
+        maskMode,
+        structs,
+        i,
+        lv,
+        total,
+        W,
+        H,
+      );
+      if (t) {
+        node.textureFilter = node.textureTarget = t;
+        res = t;
+      }
+    }
   }
 }
 
 export function shouldIgnore(computedStyle: ComputedStyle) {
-  return computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity <= 0;
+  return (computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity <= 0) && !computedStyle.maskMode;
+}
+
+// 统计mask节点后续关联跳过的数量
+function genNextCount(
+  node: Node,
+  structs: Struct[],
+  index: number,
+  lv: number,
+  total: number,
+) {
+  for (let i = index + total + 1, len = structs.length; i < len; i++) {
+    const { node: node2, lv: lv2 } = structs[i];
+    const computedStyle = node2.computedStyle;
+    if (lv > lv2) {
+      node.struct.next = i - index - total - 1;
+      break;
+    }
+    else if (i === len || (computedStyle.breakMask && lv === lv2)) {
+      node.struct.next = i - index - total - 1;
+      break;
+    }
+  }
 }
 
 /**
@@ -313,7 +385,7 @@ function genTotal(
         y0 + height,
       ]);
       // 如有设置frame的overflow裁剪
-      let xa = -1, ya = -1, xb = 1, yb = 1;
+      // let xa = -1, ya = -1, xb = 1, yb = 1;
       listRect.push({
         x: x + j * UNIT, // 坐标checkInRect用，同时真实渲染时才创建纹理，防止空白区域浪费显存，最后过滤
         y: y + i * UNIT,
@@ -560,8 +632,315 @@ function genFilter(
   return res;
 }
 
+export function genMask(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  node: Node,
+  maskMode: MASK,
+  structs: Struct[],
+  index: number,
+  lv: number,
+  total: number,
+  W: number,
+  H: number,
+) {
+  // 缓存仍然还在直接返回，无需重新生成
+  if (node.textureMask?.available) {
+    return node.textureMask;
+  }
+  const textureTarget = node.textureTarget!;
+  // 可能是个单叶子节点，mask申明无效
+  if (!node.next) {
+    return textureTarget;
+  }
+  let listM = textureTarget.list;
+  const programs = root.programs;
+  CacheProgram.useProgram(gl, programs.main);
+  // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
+  const bbox = textureTarget.bbox;
+  const { matrix, computedStyle } = node;
+  const x = bbox[0],
+    y = bbox[1];
+  const w = bbox[2] - x,
+    h = bbox[3] - y;
+  const summary = TextureCache.getEmptyInstance(gl, bbox);
+  summary.available = true;
+  const listS = summary.list;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  const UNIT = config.maxTextureSize;
+  // Bitmap有个特点，纯图使用原始图尺寸生成纹理，它一般不和当前缩放匹配，需要多生成一个临时对应的纹理
+  let genImgMask: TextureCache | undefined;
+  if (node instanceof Bitmap && node.isPure && textureTarget === node.textureCache) {
+    node.tempBbox = (node.tempBbox || node._rect || node.rect).slice(0);
+    genImgMask = genTotal(gl, root, node, structs, index, total, W, H, true);
+    listM = genImgMask!.list;
+  }
+  const m = identity();
+  assignMatrix(m, matrix);
+  // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
+  const im = inverse(m);
+  // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
+  for (let i = 0, len = Math.ceil(h / UNIT); i < len; i++) {
+    for (let j = 0, len2 = Math.ceil(w / UNIT); j < len2; j++) {
+      // 这里的逻辑和genTotal几乎一样
+      const width = j === len2 - 1 ? (w - j * UNIT) : UNIT;
+      const height = i === len - 1 ? (h - i * UNIT) : UNIT;
+      const t = createTexture(gl, 0, undefined, width, height);
+      const x0 = x + j * UNIT,
+        y0 = y + i * UNIT;
+      const bbox = new Float32Array([
+        x0,
+        y0,
+        x0 + width,
+        y0 + height,
+      ]);
+      const area = {
+        bbox,
+        w: width,
+        h: height,
+        t,
+      };
+      listS.push(area);
+      const x1 = x + j * UNIT,
+        y1 = y + i * UNIT;
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          t,
+          0,
+        );
+        gl.viewport(0, 0, width, height);
+      }
+      else {
+        frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
+      }
+      const cx = width * 0.5,
+        cy = height * 0.5;
+      // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
+      if ([MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
+        const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
+        const t = listM[index]?.t;
+        t && drawTextureCache(
+          gl,
+          cx,
+          cy,
+          programs.main,
+          {
+            opacity: 1,
+            bbox: new Float32Array([0, 0, width, height]),
+            t,
+          },
+        );
+      }
+      // 后续兄弟节点遍历
+      const isFirst = !i && !j;
+      for (let i = index + total + 1, len = structs.length; i < len; i++) {
+        const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
+        const computedStyle = node2.computedStyle;
+        // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
+        if (lv > lv2) {
+          node.struct.next = i - index - total - 1;
+          break;
+        }
+        else if (i === len || ((computedStyle.breakMask || computedStyle.maskMode) && lv === lv2)) {
+          node.struct.next = i - index - total - 1;
+          break;
+        }
+        // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
+        if (shouldIgnore(computedStyle)) {
+          i += total2 + next2;
+          continue;
+        }
+        let opacity: number,
+          matrix: Float32Array;
+        if (isFirst) {
+          // 同层级的next作为特殊的局部根节点
+          if (lv === lv2) {
+            opacity = node2.tempOpacity = computedStyle.opacity;
+            matrix = multiply(im, node2.matrix);
+          }
+          else {
+            const parent = node2.parent!;
+            opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
+            matrix = multiply(parent.tempMatrix, node2.matrix);
+          }
+          assignMatrix(node2.tempMatrix, matrix);
+        }
+        else {
+          opacity = node2.tempOpacity;
+          matrix = node2.tempMatrix;
+        }
+        let target2 = node2.textureTarget;
+        // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
+        if (!target2?.available && node2.hasContent) {
+          node2.genTexture(gl);
+          target2 = node2.textureTarget;
+        }
+        if (target2 && target2.available) {
+          const { mixBlendMode } = computedStyle;
+          // 整个节点都不在当前块内跳过
+          if (!checkInRect(target2.bbox, matrix, x1, y1, width, height)) {
+            continue;
+          }
+          const list2 = target2.list;
+          for (let j = 0, len2 = list2.length; j < len2; j++) {
+            const { bbox: bbox2, t: t2 } = list2[j];
+            if (t2 && checkInRect(bbox2, matrix, x1, y1, width, height)) {
+              let tex: WebGLTexture | undefined;
+              /**
+               * 有mbm先将本节点内容绘制到同尺寸纹理上，注意sketch和psd的区别，
+               * sketch即便是outline也不收集为底层，因此第0个summary不生效，第1个才生效，
+               * psd的alpha-with作为底层，因此第0个summary生效
+               */
+              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL
+                && (
+                  i > index + total + 1 && [MASK.OUTLINE, MASK.ALPHA, MASK.GRAY].includes(maskMode)
+                  || i > index + total && [MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode)
+                )
+              ) {
+                tex = createTexture(gl, 0, undefined, width, height);
+                if (frameBuffer) {
+                  gl.framebufferTexture2D(
+                    gl.FRAMEBUFFER,
+                    gl.COLOR_ATTACHMENT0,
+                    gl.TEXTURE_2D,
+                    tex,
+                    0,
+                  );
+                  gl.viewport(0, 0, width, height);
+                }
+                else {
+                  frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
+                }
+              }
+              // 有无mbm都复用这段逻辑
+              drawTextureCache(
+                gl,
+                cx,
+                cy,
+                programs.main,
+                {
+                  opacity,
+                  matrix,
+                  bbox: bbox2,
+                  t: t2,
+                  dx: -x1,
+                  dy: -y1,
+                },
+              );
+              // 这里才是真正生成mbm
+              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
+                area.t = genMbm(
+                  gl,
+                  area.t,
+                  tex,
+                  mixBlendMode,
+                  programs,
+                  width,
+                  height,
+                );
+              }
+            }
+          }
+        }
+        // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+        if (
+          target2?.available && target2 !== node2.textureCache
+          || computedStyle.maskMode
+        ) {
+          // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
+          if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
+            && (!node2.next || node2.next.computedStyle.breakMask)) {
+          }
+          else {
+            i += total2 + next2;
+          }
+        }
+      }
+      // texture2Blob(gl, width, height, 's' + i + ',' + j);
+    }
+  }
+  const res = TextureCache.getEmptyInstance(gl, bbox);
+  res.available = true;
+  const listR = res.list;
+  // sketch没有灰度，但psd或其它有
+  if (maskMode === MASK.GRAY || maskMode === MASK.GRAY_WITH) {
+    CacheProgram.useProgram(gl, programs.maskGray);
+    for (let i = 0, len = listS.length; i < len; i++) {
+      const { bbox, w, h, t } = listS[i];
+      let tex;
+      if (listM[i] && listM[i].t && t) {
+        tex = createTexture(gl, 0, undefined, w, h);
+        if (frameBuffer) {
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tex,
+            0,
+          );
+          gl.viewport(0, 0, w, h);
+        }
+        else {
+          frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+        }
+        listM[i] && listM[i].t && drawMask(gl, programs.maskGray, listM[i].t!, t!);
+        // texture2Blob(gl, w, h, 'res' + i);
+      }
+      listR.push({
+        bbox: bbox.slice(0),
+        w,
+        h,
+        t: tex!,
+      });
+    }
+  }
+  // alpha/alpha-with
+  else {
+    // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
+    for (let i = 0, len = listS.length; i < len; i++) {
+      const { bbox, w, h, t } = listS[i];
+      const tex = createTexture(gl, 0, undefined, w, h);
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+        gl.viewport(0, 0, w, h);
+      }
+      else {
+        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+      }
+      CacheProgram.useProgram(gl, programs.mask);
+      drawMask(gl, programs.mask, listM[i].t!, t!);
+      listR.push({
+        bbox: bbox.slice(0),
+        w,
+        h,
+        t: tex,
+      });
+    }
+  }
+  CacheProgram.useProgram(gl, programs.main);
+  // 删除fbo恢复
+  summary.release();
+  genImgMask && genImgMask.release();
+  if (frameBuffer) {
+    releaseFrameBuffer(gl, frameBuffer, W, H);
+  }
+  else {
+    gl.viewport(0, 0, W, H);
+  }
+  return res;
+}
+
 // 创建一个和画布一样大的纹理，将画布和即将mbm混合的节点作为输入，结果重新赋值给画布
-export function genMbm(
+function genMbm(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   tex1: WebGLTexture,
   tex2: WebGLTexture,

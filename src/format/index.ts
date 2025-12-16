@@ -238,6 +238,8 @@ export type JStyle = {
     | 'color'
     | 'luminosity';
   pointerEvents: boolean;
+  maskMode: 'none' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with';
+  breakMask: boolean;
   objectFit: 'fill' | 'contain' | 'cover';
   borderTopLeftRadius: number,
   borderTopRightRadius: number,

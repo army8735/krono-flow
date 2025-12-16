@@ -50,6 +50,8 @@ export const DEFAULT_STYLE = {
   perspectiveSelf: 0,
   mixBlendMode: 'normal',
   pointerEvents: true,
+  maskMode: 'none',
+  breakMask: false,
   objectFit: 'fill',
   borderTopLeftRadius: 0,
   borderTopRightRadius: 0,
