@@ -5,6 +5,7 @@ import style from './style';
 import config from './config';
 import interaction from './interaction';
 import animation from './animation';
+import math from './math';
 
 export default {
   parser,
@@ -14,4 +15,5 @@ export default {
   style,
   interaction,
   animation,
+  math,
 };

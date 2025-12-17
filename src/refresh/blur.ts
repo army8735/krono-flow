@@ -1,5 +1,5 @@
 import Root from '../node/Root';
-import { boxesForGauss, kernelSize, outerSizeByD } from '../math/blur';
+import { boxesForGauss, gaussKernel, gaussSizeByD } from '../math/blur';
 import TextureCache from './TextureCache';
 import config from '../config';
 import {
@@ -264,8 +264,8 @@ export function genGaussBlur(
   W: number,
   H: number,
 ) {
-  const d = kernelSize(sigma);
-  const spread = outerSizeByD(d);
+  const d = gaussKernel(sigma);
+  const spread = gaussSizeByD(d);
   const bboxS = textureTarget.bbox;
   const bboxR = bboxS.slice(0);
   bboxR[0] -= spread;
@@ -448,8 +448,8 @@ export function genRadialBlur(
   H: number,
 ) {
   const bboxS = textureTarget.bbox;
-  const d = kernelSize(sigma);
-  const spread = outerSizeByD(d);
+  const d = gaussKernel(sigma);
+  const spread = gaussSizeByD(d);
   const bboxR = bboxS.slice(0);
   // 根据center和shader算法得四周扩展，中心点和四边距离是向量长度r，spread*2/diagonal是扩展比例
   const w1 = bboxR[2] - bboxR[0],

@@ -2,7 +2,7 @@
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
  * 根据模糊参数sigma求卷积核尺寸
  */
-export function kernelSize(sigma: number) {
+export function gaussKernel(sigma: number) {
   if (sigma <= 0) {
     return 0;
   }
@@ -22,12 +22,12 @@ export function kernelSize(sigma: number) {
  * @param sigma
  * @returns {number}
  */
-export function outerSize(sigma: number) {
-  const d = kernelSize(sigma);
-  return outerSizeByD(d);
+export function gaussSize(sigma: number) {
+  const d = gaussKernel(sigma);
+  return gaussSizeByD(d);
 }
 
-export function outerSizeByD(d: number) {
+export function gaussSizeByD(d: number) {
   return Math.floor(d * 0.5) * 3;
 }
 
@@ -87,11 +87,67 @@ export function dualKawase(sigma: number) {
   return { passes, distance };
 }
 
+// N2 是分段二次多项式，计算简单且乘法少
+export function n2Kernel(x: number) {
+  const abs_x = Math.abs(x);
+  if (abs_x >= 1.5) return 0;
+
+  let y;
+  if (abs_x < 0.5) {
+    // [0, 0.5): 0.75 - x^2
+    y = 0.75 - x * x;
+  } else {
+    // [0.5, 1.5): 0.5 * (1.5 - |x|)^2
+    const t = 1.5 - abs_x;
+    y = 0.5 * t * t;
+  }
+  return y * (4 / 3); // 归一化峰值
+}
+
+export function n2Size(sigma: number) {
+  // 确保 n 是有效的奇数
+  if (sigma < 1) {
+    return 0;
+  }
+  if (sigma % 2 === 0) {
+    sigma++;
+  }
+  const r = sigma >> 1;
+  return 2 * r + 1;
+}
+
+export function n2Weight(sigma: number) {
+  // 确保 n 是有效的奇数
+  if (sigma < 1) {
+    return [];
+  }
+  if (sigma % 2 === 0) {
+    sigma++;
+  }
+  const r = sigma >> 1;
+  // const k = 2 * r + 1;
+  const s = r / 1.5;
+  const weights: number[] = [];
+  let total = 0;
+  for (let i = -r; i <= r; i++) {
+    // 计算缩放坐标
+    const x_scaled = Math.abs(i) / s;
+    // 计算未归一化权重
+    const w = n2Kernel(x_scaled);
+    weights.push(w);
+    total += w;
+  }
+  return weights.map(item => item / total);
+}
+
 export default {
-  kernelSize,
-  outerSize,
-  outerSizeByD,
+  gaussKernel,
+  gaussSize,
+  gaussSizeByD,
   gaussianWeight,
   boxesForGauss,
   dualKawase,
+  n2Kernel,
+  n2Size,
+  n2Weight,
 };

@@ -31,12 +31,11 @@ import TextBox from './TextBox';
 import CanvasCache from '../refresh/CanvasCache';
 import font from '../style/font';
 import { getConic, getLinear, getRadial } from '../style/gradient';
-import { outerSize } from '../math/blur';
+import { gaussSize } from '../math/blur';
 import { clone, equal } from '../util/type';
 import { RefreshLevel } from '../refresh/level';
 import { calComputedStroke } from '../style/compute';
 import { calPoint, inverse4 } from '../math/matrix';
-import { canvasPolygon } from '../refresh/paint';
 
 export type EditStyle = {
   isLeft: boolean;
@@ -3118,7 +3117,7 @@ class Text extends Node {
             res![3] = Math.max(res![3], y2);
           }
           if (textShadow) {
-            const d = outerSize(textShadow.blur);
+            const d = gaussSize(textShadow.blur);
             let dx = textShadow.x + d;
             let dy = textShadow.y + d;
             if (dx > 0) {
