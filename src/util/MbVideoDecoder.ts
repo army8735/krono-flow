@@ -302,8 +302,8 @@ export class MbVideoDecoder extends Event {
     const cache = HASH[this.url];
     const duration = cache.meta.duration;
     const gopList = cache.gopList;
-    // 超过duration+DUR限制为空，DUR是为了防止精度计算导致最后一帧时间不太准确找不到正确索引
-    if (time < -config.decodeNextDuration || !gopList.length || time > duration + config.decodeNextDuration) {
+    // 超过duration+1e-3限制为空，为了防止精度计算导致最后一帧时间不太准确找不到正确索引
+    if (time < -config.decodeNextDuration || !gopList.length || time > duration + 1e-3) {
       return -1;
     }
     if (gopList.length === 1 || time <= 0) {
@@ -340,7 +340,8 @@ export class MbVideoDecoder extends Event {
     const cache = HASH[this.url];
     const duration = cache.meta.duration;
     const gopList = cache.gopList;
-    if (time < 0 || !gopList.length || time > duration) {
+    // 精度计算或者时间轴时长问题，duration给个误差，最后获取帧内容自动兜底
+    if (time < 0 || !gopList.length || time > duration + 1e-3) {
       return;
     }
     let gop: CacheGOP | undefined;
