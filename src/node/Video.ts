@@ -347,7 +347,7 @@ class Video extends Node {
           }
           else {
             this.renderCanvas();
-            const tc = TextureCache.getCanvasCacheInstance(gl, this.canvasCache!, this._rect || this.rect,);
+            const tc = TextureCache.getCanvasCacheInstance(gl, this.canvasCache!, this._rect || this.rect);
             this.textureTarget = this.textureCache = tc;
             this.canvasCache!.release();
           }
