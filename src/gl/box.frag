@@ -9,7 +9,7 @@ uniform float u_ph;
 uniform int u_r;
 uniform int u_direction;
 
-const int MAX_KERNEL_SIZE = 2048;
+const int MAX_KERNEL_SIZE = 1024;
 
 void main() {
   vec4 color = texture2D(u_texture, v_texCoords);

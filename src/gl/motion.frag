@@ -7,7 +7,7 @@ uniform sampler2D u_texture;
 uniform int u_kernel;
 uniform vec4 u_velocity;
 
-const int MAX_KERNEL_SIZE = 512;
+const int MAX_KERNEL_SIZE = 1024;
 
 void main() {
   vec4 color = texture2D(u_texture, v_texCoords + u_velocity.zw);

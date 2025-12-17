@@ -8,7 +8,7 @@ uniform int u_kernel;
 uniform vec2 u_center;
 uniform float u_ratio;
 
-const int MAX_KERNEL_SIZE = 2048;
+const int MAX_KERNEL_SIZE = 1024;
 
 void main(void) {
   if (v_texCoords.x == u_center.x && v_texCoords.y == u_center.y) {
