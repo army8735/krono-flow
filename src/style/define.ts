@@ -8,10 +8,13 @@ export enum StyleUnit {
   BOOLEAN = 6,
   STRING = 7,
   GRADIENT = 8,
-  BLUR = 9,
-  PATTERN = 10,
-  SHADOW = 11,
-  MATRIX = 12,
+  MATRIX = 9,
+  SHADOW = 10,
+  PATTERN = 11,
+  GAUSS_BLUR = 12,
+  MOTION_BLUR = 13,
+  RADIAL_BLUR = 14,
+  BLOOM = 15,
 }
 
 export type StyleStrValue = {
@@ -118,11 +121,6 @@ export type StyleGradientValue = {
   u: StyleUnit.GRADIENT;
 };
 
-export type StylePatternValue = {
-  v: Pattern;
-  u: StyleUnit.PATTERN;
-};
-
 export type StyleFillRuleValue = {
   v: FILL_RULE;
   u: StyleUnit.NUMBER;
@@ -221,12 +219,8 @@ export type Style = {
   borderTopRightRadius: StyleNumValue;
   borderBottomLeftRadius: StyleNumValue;
   borderBottomRightRadius: StyleNumValue;
-  blur: StyleBlurValue;
-  hueRotate: StyleNumValue;
-  saturate: StyleNumValue;
-  brightness: StyleNumValue;
-  contrast: StyleNumValue;
   overflow: StyleOverflowValue;
+  filter: (StyleFilter)[];
 };
 
 export type ComputedStyle = {
@@ -288,12 +282,8 @@ export type ComputedStyle = {
   borderTopRightRadius: number;
   borderBottomLeftRadius: number;
   borderBottomRightRadius: number;
-  blur: ComputedBlur;
-  hueRotate: number;
-  saturate: number;
-  brightness: number;
-  contrast: number;
   overflow: number;
+  filter: (ComputedFilter)[];
 };
 
 export enum TEXT_ALIGN {
@@ -441,10 +431,50 @@ export type ComputedBlur = {
   angle?: number;
 };
 
-export type StyleBlurValue = {
-  v: Blur;
-  u: StyleUnit.BLUR;
+export type GaussBlur = {
+  v: {
+    radius: StyleNumValue;
+  },
+  u: StyleUnit.GAUSS_BLUR;
 };
+
+export type ComputedGaussBlur = { radius: number, u: StyleUnit.GAUSS_BLUR };
+
+export type RadialBlur = {
+  v: {
+    radius: StyleNumValue;
+    center: [StyleNumValue, StyleNumValue];
+  },
+  u: StyleUnit.RADIAL_BLUR;
+};
+
+export type ComputedRadialBlur = { radius: number, center: [number, number], u: StyleUnit.RADIAL_BLUR };
+
+export type MotionBlur = {
+  v: {
+    radius: StyleNumValue;
+    angle: StyleNumValue;
+    offset: StyleNumValue;
+  },
+  u: StyleUnit.MOTION_BLUR;
+};
+
+export type ComputedMotionBlur = { radius: number, angle: number, offset: number, u: StyleUnit.MOTION_BLUR };
+
+export type Bloom = {
+  v: {
+    radius: StyleNumValue;
+    threshold: StyleNumValue;
+    knee: StyleNumValue;
+  },
+  u: StyleUnit.BLOOM;
+};
+
+export type ComputedBloom = { radius: number, threshold: number, knee: number, u: StyleUnit.BLOOM };
+
+export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom;
+
+export type ComputedFilter = ComputedGaussBlur | ComputedRadialBlur | ComputedMotionBlur | ComputedBloom;
 
 export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumValue {
   if (v === 'auto') {

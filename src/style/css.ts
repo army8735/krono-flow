@@ -5,8 +5,10 @@ import {
   BLUR,
   calUnit,
   ComputedBlur,
+  ComputedFilter,
   ComputedGradient,
-  ComputedStyle, CURVE_MODE,
+  ComputedStyle,
+  CURVE_MODE,
   FILL_RULE,
   FONT_STYLE,
   MASK,
@@ -19,6 +21,7 @@ import {
   STROKE_LINE_JOIN,
   STROKE_POSITION,
   Style,
+  StyleFilter,
   StyleNumValue,
   StyleUnit,
   TEXT_ALIGN,
@@ -510,114 +513,6 @@ export function normalize(style: Partial<JStyle>) {
   if (style.objectFit !== undefined) {
     res.objectFit = { v: getObjectFit(style.objectFit), u: StyleUnit.NUMBER };
   }
-  if (style.blur !== undefined) {
-    const blur = style.blur;
-    const v = reg.blur.exec(blur);
-    if (v) {
-      const t = v[1].toLowerCase();
-      let n = parseFloat(v[2]);
-      if (n > 0) {
-        n = Math.max(n, 1);
-      }
-      else {
-        n = 0;
-      }
-      if (t === 'gauss') {
-        res.blur = {
-          v: { t: BLUR.GAUSSIAN, radius: { v: n, u: StyleUnit.PX } },
-          u: StyleUnit.BLUR,
-        };
-      }
-      else if (t === 'background') {
-        const match = /saturation\s*\((.+)\)/i.exec(blur);
-        let saturation = 0;
-        if (match) {
-          saturation = parseInt(match[1]) || 0;
-        }
-        res.blur = {
-          v: {
-            t: BLUR.BACKGROUND,
-            radius: { v: n, u: StyleUnit.PX },
-            saturation: { v: saturation, u: StyleUnit.PERCENT },
-          },
-          u: StyleUnit.BLUR,
-        };
-      }
-      else if (t === 'radial') {
-        const match = /center\s*\((.+)\)/i.exec(blur);
-        let center = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }];
-        if (match) {
-          const m = match[1].match(reg.number);
-          if (m) {
-            center[0] = {
-              v: parseFloat(m[0]),
-              u: StyleUnit.PERCENT,
-            };
-            center[1] = {
-              v: parseFloat(m[1]),
-              u: StyleUnit.PERCENT,
-            };
-          }
-        }
-        res.blur = {
-          v: { t: BLUR.RADIAL, radius: { v: n, u: StyleUnit.PX }, center },
-          u: StyleUnit.BLUR,
-        };
-      }
-      else if (t === 'motion') {
-        const matchAngle = /angle\s*\((.+)\)/i.exec(blur);
-        const angle = {
-          v: 0,
-          u: StyleUnit.DEG,
-        };
-        if (matchAngle) {
-          angle.v = parseFloat(matchAngle[1]);
-        }
-        const matchOffset = /offset\s*\((.+)\)/i.exec(blur);
-        let offset = {
-          v: 0,
-          u: StyleUnit.PX,
-        };
-        if (matchOffset) {
-          offset.v = parseFloat(matchOffset[1]);
-        }
-        res.blur = {
-          v: {
-            t: BLUR.MOTION,
-            radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX },
-            angle,
-            offset,
-          },
-          u: StyleUnit.BLUR,
-        };
-      }
-      else {
-        res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
-      }
-    }
-    else {
-      res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
-    }
-    ['hueRotate', 'saturate', 'brightness', 'contrast'].forEach(k => {
-      if (style[k as keyof JStyle] === undefined) {
-        return;
-      }
-      const n = calUnit(style[k as keyof JStyle] as string | number);
-      // hue是角度，其它都是百分比
-      if (k === 'hueRotate') {
-        if (n.u !== StyleUnit.DEG) {
-          n.u = StyleUnit.DEG;
-        }
-      }
-      else {
-        if (n.u !== StyleUnit.PERCENT) {
-          n.v *= 100;
-          n.u = StyleUnit.PERCENT;
-        }
-      }
-      res[k] = n;
-    });
-  }
   if (style.overflow !== undefined) {
     const overflow = style.overflow;
     let v = OVERFLOW.VISIBLE;
@@ -628,6 +523,100 @@ export function normalize(style: Partial<JStyle>) {
       v,
       u: StyleUnit.NUMBER,
     };
+  }
+  if (style.filter !== undefined) {
+    const list = Array.isArray(style.filter) ? style.filter : [style.filter];
+    const filter: StyleFilter[] = [];
+    list.forEach(item => {
+      const match = /([\w-]+)\s*\((\s*.+\s*)\)/i.exec(item as string);
+      if (match) {
+        const k = match[1];
+        const v = match[2];
+        if (k === 'gaussBlur') {
+          const n = parseFloat(v) || 0;
+          filter.push({
+            v: {
+              radius: { v: Math.max(n, 0), u: StyleUnit.PX },
+            },
+            u: StyleUnit.GAUSS_BLUR,
+          });
+        }
+        else if (k === 'radiaBlur') {
+          const n = parseFloat(v) || 0;
+          const mc = /,\s*(.+)\s*(?:,\s*(.+))?/.exec(v);
+          const center = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }] as [StyleNumValue, StyleNumValue];
+          if (mc) {
+            const x = calUnit(mc[1] as string | number);
+            if (x.u !== StyleUnit.PX && x.u !== StyleUnit.PERCENT) {
+              x.u = StyleUnit.PX;
+            }
+            center[0] = x;
+            if (mc[2]) {
+              const y = calUnit(mc[2] as string | number);
+              if (y.u !== StyleUnit.PX && y.u !== StyleUnit.PERCENT) {
+                y.u = StyleUnit.PX;
+              }
+              center[1] = y;
+            }
+            else {
+              center[1] = { v: x.v, u: x.u };
+            }
+          }
+          filter.push({
+            v: {
+              radius: { v: Math.max(n, 0), u: StyleUnit.PX },
+              center,
+            },
+            u: StyleUnit.RADIAL_BLUR,
+          });
+        }
+        else if (k === 'motionBlur') {
+          const n = parseFloat(v) || 0;
+          const angle = { v: 0, u: StyleUnit.DEG } as StyleNumValue;
+          const offset = { v: 0, u: StyleUnit.DEG } as StyleNumValue;
+          const m = /,\s*(.+)\s*(?:,\s*(.+))?/.exec(v);
+          if (m) {
+            const a = parseFloat(m[1]);
+            angle.v = a || 0;
+            if (m[2]) {
+              const x = calUnit(m[2] as string | number);
+              offset.v = x.v;
+            }
+          }
+          filter.push({
+            v: {
+              radius: { v: Math.max(n, 0), u: StyleUnit.PX },
+              angle,
+              offset,
+            },
+            u: StyleUnit.MOTION_BLUR,
+          });
+        }
+        else if (k === 'bloom') {
+          const n = parseFloat(v) || 0;
+          const mt = /,\s*(.+)\s*(?:,\s*(.+))?/.exec(v);
+          const threshold = { v: 1, u: StyleUnit.NUMBER } as StyleNumValue;
+          const knee = { v: 0.5, u: StyleUnit.NUMBER } as StyleNumValue;
+          if (mt) {
+            const b = calUnit(mt[1] as string | number);
+            threshold.v = Math.max(0, b.v);
+            if (mt[2]) {
+              const k = calUnit(mt[2] as string | number);
+              knee.v = Math.max(0, Math.min(k.v, threshold.v));
+            }
+          }
+          filter.push({
+            v: {
+              radius: { v: Math.max(n, 0), u: StyleUnit.PX },
+              threshold,
+              knee,
+            },
+            u: StyleUnit.BLOOM,
+          });
+        }
+      }
+    });
+    res.filter = filter;
   }
   return res;
 }
@@ -846,6 +835,39 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: keyof Style)
     }
     return true;
   }
+  if (k === 'filter') {
+    if (as.length !== bs.length) {
+      return false;
+    }
+    for (let i = 0, len = as.length; i < len; i++) {
+      const ai = as[i],
+        bi = bs[i];
+      if (ai.u !== bi.u) {
+        return false;
+      }
+      if (ai.radius.v !== bi.radius.v) {
+        return false;
+      }
+      if (ai.u === StyleUnit.GAUSS_BLUR) {
+      }
+      else if (ai.u === StyleUnit.RADIAL_BLUR) {
+        if (ai.center[0].v !== bi.center[0].v || ai.center[1].v !== bi.center[1].v) {
+          return false;
+        }
+      }
+      else if (ai.u === StyleUnit.MOTION_BLUR) {
+        if (ai.angle.v !== bi.angle.v || ai.offset.v !== bi.offset.v) {
+          return false;
+        }
+      }
+      else if (ai.u === StyleUnit.BLOOM) {
+        if (ai.threshold.v !== bi.threshold.v || ai.knee.v !== bi.knee.v) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
   if (
     k === 'fillEnable' ||
     k === 'fillRule' ||
@@ -863,36 +885,6 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: keyof Style)
         bi = bs[i];
       if (ai.u !== bi.u || ai.v !== bi.v) {
         return false;
-      }
-    }
-    return true;
-  }
-  if (k === 'blur') {
-    const av = (as as Style['blur']).v;
-    const bv = (bs as Style['blur']).v;
-    if (av.t !== bv.t) {
-      return false;
-    }
-    const list = ['radius', 'saturation', 'offset', 'angle'] as const;
-    for (let i = 0, len = list.length; i < len; i++) {
-      const k = list[i];
-      const av2 = av[k];
-      const bv2 = bv[k];
-      if (!av2 && !bv2) {}
-      else if (!av2) {
-        if (bv2!.v !== 0) {
-          return false;
-        }
-      }
-      else if (!bv2) {
-        if (av2!.v !== 0) {
-          return false;
-        }
-      }
-      else {
-        if (av2.v !== bv2.v || av2.u !== bv2.u) {
-          return false;
-        }
       }
     }
     return true;
@@ -925,7 +917,7 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
         u: v.u,
       };
     }
-    else if (k === 'fill' || k === 'stroke') {
+    else if (k === 'fill' || k === 'stroke' || k === 'filter') {
       res[k] = v.map((item: any) => clone(item));
     }
     else if (
@@ -938,17 +930,6 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
       k === 'strokeDasharray'
     ) {
       res[k] = v.map((item: any) => Object.assign({}, item));
-    }
-    else if (k === 'blur') {
-      res[k] = {
-        v: {
-          t: v.v.t,
-          radius: Object.assign({}, v.v.radius),
-          angle: Object.assign({}, v.v.angle),
-          offset: Object.assign({}, v.v.offset),
-        },
-        u: v.u,
-      };
     }
     else {
       // @ts-ignore
@@ -1033,6 +1014,21 @@ export function getCssBlur(blur: ComputedBlur) {
     s += ` saturation(${(blur.saturation === undefined ? 1 : blur.saturation) * 100}%)`;
   }
   return s;
+}
+
+export function getCssFilter(filter: ComputedFilter) {
+  if (filter.u === StyleUnit.GAUSS_BLUR) {
+    return 'gauss(' + filter.radius + ')';
+  }
+  else if (filter.u === StyleUnit.RADIAL_BLUR) {
+    return 'radial(' + filter.radius + ',' + filter.center.join(', ') + ')';
+  }
+  else if (filter.u === StyleUnit.MOTION_BLUR) {
+    return 'motion(' + filter.radius + ',' + filter.offset + ')';
+  }
+  else if (filter.u === StyleUnit.BLOOM) {
+    return 'motion(' + filter.radius + ',' + filter.threshold + ',' + filter.knee + ')';
+  }
 }
 
 export function getCssFillStroke(item: number[] | ComputedGradient, width?: number, height?: number, standard = false) {

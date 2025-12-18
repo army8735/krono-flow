@@ -6,8 +6,8 @@ import {
   calNormalLineHeight,
   calSize,
   equalStyle,
-  getCssBlur,
   getCssFillStroke,
+  getCssFilter,
   getCssMbm,
   getCssObjectFit,
   getCssStrokePosition,
@@ -52,7 +52,7 @@ import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
 import AbstractAnimation, { Options } from '../animation/AbstractAnimation';
 import CssAnimation, { JKeyFrame } from '../animation/CssAnimation';
-import { calComputedBlur, calComputedFill, calComputedStroke } from '../style/compute';
+import { calComputedFill, calComputedFilter, calComputedStroke } from '../style/compute';
 import { clone } from '../util/type';
 import { color2rgbaStr } from '../style/color';
 import inject, { OffScreen } from '../util/inject';
@@ -443,11 +443,7 @@ class Node extends Event {
 
   calFilter(lv: RefreshLevel) {
     const { style, computedStyle } = this;
-    computedStyle.blur = calComputedBlur(style.blur);
-    computedStyle.hueRotate = style.hueRotate.v;
-    computedStyle.saturate = style.saturate.v * 0.01;
-    computedStyle.brightness = style.brightness.v * 0.01;
-    computedStyle.contrast = style.contrast.v * 0.01;
+    computedStyle.filter = calComputedFilter(style.filter, computedStyle.width, computedStyle.height);
     // repaint已经做了
     if (lv < RefreshLevel.REPAINT) {
       this._filterBbox = undefined;
@@ -1246,13 +1242,9 @@ class Node extends Event {
       }
       return item;
     });
-    const blur = calComputedBlur(style.blur);
-    res.blur = getCssBlur(blur);
-    res.hueRotate = style.hueRotate.v;
-    res.saturate = style.saturate.v + '%';
-    res.brightness = style.brightness.v + '%';
-    res.contrast = style.contrast.v + '%';
     res.overflow = ['visible', 'hidden'][style.overflow.v];
+    res.filter = calComputedFilter(style.filter, computedStyle.width, computedStyle.height)
+      .map(item => getCssFilter(item));
     return res as JStyle;
   }
 

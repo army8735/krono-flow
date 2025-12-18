@@ -246,12 +246,8 @@ export type JStyle = {
   borderTopRightRadius: number,
   borderBottomLeftRadius: number,
   borderBottomRightRadius: number,
-  blur: string,
-  hueRotate: number | string;
-  saturate: number | string;
-  brightness: number | string;
-  contrast: number | string;
   overflow: 'visible' | 'hidden';
+  filter: string[];
 };
 
 export type ResizeStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height' | 'scaleX' | 'scaleY'>>;
@@ -264,7 +260,7 @@ export type ModifyRichStyle = Partial<Omit<Rich, 'location' | 'length'>>;
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
   const dft = Object.assign({}, DEFAULT_STYLE);
-  (['transformOrigin', 'perspectiveOrigin', 'color', 'strokeDasharray'] as const).forEach(k => {
+  (['transformOrigin', 'perspectiveOrigin', 'color', 'strokeDasharray', 'filter'] as const).forEach(k => {
     // @ts-ignore
     dft[k] = dft[k].slice(0);
   });

@@ -1,4 +1,4 @@
-import { ComputedGradient, Gradient, Style } from './define';
+import { ComputedFilter, ComputedGradient, Gradient, Style, StyleUnit } from './define';
 
 export function calComputedFill(fill: Style['fill']) {
   return fill.map((item) => {
@@ -40,20 +40,31 @@ export function calComputedStroke(stroke: Style['stroke']) {
   });
 }
 
-export function calComputedBlur(blur: Style['blur']) {
-  const v = blur.v;
-  return {
-    t: v.t,
-    radius: v.radius?.v || 0,
-    center: v.center ? (v.center.map(item => item.v * 0.01) as [number, number]) : ([0.5, 0.5] as [number, number]),
-    saturation: (v.saturation?.v ?? 100) * 0.01,
-    offset: v.offset?.v || 0,
-    angle: v.angle ? v.angle.v : 0,
-  };
+export function calComputedFilter(filter: Style['filter'], w: number, h: number) {
+  return filter.map(item => {
+    const { v, u } = item;
+    const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
+    if (u === StyleUnit.GAUSS_BLUR) {
+      return { radius, u };
+    }
+    else if (u === StyleUnit.RADIAL_BLUR) {
+      const center = v.center.map((n, i) => {
+        return n.u === StyleUnit.PERCENT ? n.v * (i ? h : w) * 0.01 : n.v;
+      }) as [number, number];
+      return { radius, center, u };
+    }
+    else if (u === StyleUnit.MOTION_BLUR) {
+      return { radius, angle: v.angle.v, offset: v.offset.v, u };
+    }
+    else if (u === StyleUnit.BLOOM) {
+      const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
+      return { radius, threshold: v.threshold.v, knee: v.knee.v, u };
+    }
+  }) as ComputedFilter[];
 }
 
 export default {
   calComputedFill,
   calComputedStroke,
-  calComputedBlur,
+  calComputedFilter,
 };

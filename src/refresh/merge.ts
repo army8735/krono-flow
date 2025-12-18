@@ -1,4 +1,4 @@
-import { BLUR, ComputedStyle, MASK, MIX_BLEND_MODE, OVERFLOW, VISIBILITY } from '../style/define';
+import { ComputedStyle, MASK, MIX_BLEND_MODE, OVERFLOW, StyleUnit, VISIBILITY } from '../style/define';
 import Node from '../node/Node';
 import Bitmap from '../node/Bitmap';
 import Root from '../node/Root';
@@ -19,7 +19,6 @@ import inject from '../util/inject';
 import { genGaussBlur, genMotionBlur, genRadialBlur } from './blur';
 import { genFrameBufferWithTexture, releaseFrameBuffer } from './fb';
 import { checkInRect } from './check';
-import { genColorMatrix } from './cm';
 import CacheProgram from '../gl/CacheProgram';
 import { calMatrixByOrigin, calPerspectiveMatrix } from '../style/transform';
 
@@ -57,13 +56,9 @@ export function genMerge(
     // 加载中的计数
     root.contentLoadingCount += node.calContentLoading();
     const {
-      blur,
+      filter,
       opacity,
       mixBlendMode,
-      hueRotate,
-      saturate,
-      brightness,
-      contrast,
       overflow,
       maskMode,
     } = computedStyle;
@@ -76,15 +71,9 @@ export function genMerge(
       )
       && total > 0
       && !textureTotal?.available;
-    const needBlur =
-      (
-        (blur.t === BLUR.GAUSSIAN && blur.radius >= 1) ||
-        (blur.t === BLUR.BACKGROUND &&
-          (blur.radius >= 1 || blur.saturation !== 1) && total) ||
-        (blur.t === BLUR.RADIAL && blur.radius >= 1) ||
-        (blur.t === BLUR.MOTION && blur.radius >= 1)
-      ) &&
-      !textureFilter?.available;
+    const needFilter = filter.map(item => {
+      return item.radius >= 1;
+    }).filter(item => item).length > 0 && !textureFilter?.available;
     let needMask = maskMode > 0 && !textureMask?.available;
     // 单个的alpha蒙版不渲染（没有next），target指向空的mask纹理汇总，循环时判空跳过
     if (needMask) {
@@ -98,8 +87,7 @@ export function genMerge(
         needMask = false;
       }
     }
-    const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
-    if (needTotal || needBlur || needMask || needColor) {
+    if (needTotal || needFilter || needMask) {
       const t: Merge = {
         i,
         lv,
@@ -565,73 +553,73 @@ function genFilter(
     return node.textureFilter;
   }
   let res: TextureCache | undefined;
-  const {
-    blur,
-    hueRotate,
-    saturate,
-    brightness,
-    contrast,
-  } = node.computedStyle;
+  const filter = node.computedStyle.filter;
   const source = node.textureTarget!;
-  // 高斯模糊
-  if (blur.t === BLUR.GAUSSIAN && blur.radius >= 1) {
-    const t = genGaussBlur(gl, root, res || source, blur.radius, W, H);
-    if (res) {
-      res.release();
+  filter.forEach(item => {
+    if (item.u === StyleUnit.GAUSS_BLUR) {
+      if (item.radius >= 1) {
+        const t = genGaussBlur(gl, root, res || source, item.radius, W, H);
+        if (res) {
+          res.release();
+        }
+        res = t;
+      }
     }
-    res = t;
-  }
-  // 径向模糊/缩放模糊
-  else if (blur.t === BLUR.RADIAL && blur.radius >= 1) {
-    const t = genRadialBlur(
-      gl,
-      root,
-      res || source,
-      blur.radius,
-      blur.center!,
-      W,
-      H,
-    );
-    if (res) {
-      res.release();
+    else if (item.u === StyleUnit.RADIAL_BLUR) {
+      if (item.radius >= 1) {
+        const t = genRadialBlur(
+          gl,
+          root,
+          res || source,
+          item.radius,
+          item.center,
+          W,
+          H,
+        );
+        if (res) {
+          res.release();
+        }
+        res = t;
+      }
     }
-    res = t;
-  }
-  // 运动模糊/方向模糊
-  else if (blur.t === BLUR.MOTION && blur.radius >= 1) {
-    const t = genMotionBlur(
-      gl,
-      root,
-      res || source,
-      blur.radius,
-      blur.angle || 0, // 一定有，0兜底
-      blur.offset || 0,
-      W,
-      H,
-    );
-    if (res) {
-      res.release();
+    else if (item.u === StyleUnit.MOTION_BLUR) {
+      if (item.radius >= 1) {
+        const t = genMotionBlur(
+          gl,
+          root,
+          res || source,
+          item.radius,
+          item.angle, // 一定有，0兜底
+          item.offset,
+          W,
+          H,
+        );
+        if (res) {
+          res.release();
+        }
+        res = t;
+      }
     }
-    res = t;
-  }
+    else if (item.u === StyleUnit.BLOOM) {}
+  });
   // 颜色调整
-  if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
-    const t = genColorMatrix(
-      gl,
-      root,
-      res || source,
-      hueRotate,
-      saturate,
-      brightness,
-      contrast,
-      W,
-      H,
-    );
-    if (res) {
-      res.release();
-    }
-    res = t;
-  }
+  // if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
+  //   const t = genColorMatrix(
+  //     gl,
+  //     root,
+  //     res || source,
+  //     hueRotate,
+  //     saturate,
+  //     brightness,
+  //     contrast,
+  //     W,
+  //     H,
+  //   );
+  //   if (res) {
+  //     res.release();
+  //   }
+  //   res = t;
+  // }
   return res;
 }
 

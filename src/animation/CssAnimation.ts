@@ -3,7 +3,7 @@ import Node from '../node/Node';
 import { JStyle } from '../format';
 import easing from './easing';
 import { isFunction, isNumber, isString } from '../util/type';
-import { Style, StyleBlurValue, StyleNumValue, StyleUnit } from '../style/define';
+import { Bloom, MotionBlur, RadialBlur, Style, StyleFilter, StyleNumValue, StyleUnit } from '../style/define';
 import css, { cloneStyle } from '../style/css';
 
 export type JKeyFrame = Partial<JStyle> & {
@@ -11,11 +11,15 @@ export type JKeyFrame = Partial<JStyle> & {
   easing?: string | number[] | ((v: number) => number);
 };
 
+type FilterTransition = {
+  radius: number, angle?: number, offset?: number, center?: [number, number], threshold?: number, knee?: number,
+};
+
 export type KeyFrame = {
   style: Partial<Style>;
   time: number;
   easing?: (v: number) => number;
-  transition: { key: keyof Style, diff: number | [number, number] | { radius: number, angle?: number, offset?: number } }[]; // 到下帧有变化的key和差值
+  transition: { key: keyof Style, diff: number | [number, number] | FilterTransition[] }[]; // 到下帧有变化的key和差值
   fixed: (keyof Style)[]; // 固定不变化的key
 };
 
@@ -163,16 +167,24 @@ export class CssAnimation extends AbstractAnimation {
           o[1].v += (diff as [number, number])[1] * percent;
           update[key] = o;
         }
-        else if (key === 'blur') {
-          const o = cloneStyle(style, key).blur as StyleBlurValue;
-          o.v.radius.v += (diff as any).radius * percent;
-          if (o.v.angle) {
-            o.v.angle.v += (diff as any).angle * percent;
-          }
-          if (o.v.offset) {
-            o.v.offset.v += (diff as any).offset * percent;
-          }
-          update[key] = o;
+        else if (key === 'filter') {
+          const o = cloneStyle(style, key).filter as StyleFilter[];
+          o.forEach((item, i) => {
+            const d = (diff as FilterTransition[])[i];
+            item.v.radius.v += d.radius * percent;
+            if (item.u === StyleUnit.RADIAL_BLUR) {
+              item.v.center[0].v += d.center![0] * percent;
+              item.v.center[1].v += d.center![1] * percent;
+            }
+            else if (item.u === StyleUnit.MOTION_BLUR) {
+              item.v.angle.v += d.angle! * percent;
+              item.v.offset.v += d.offset! * percent;
+            }
+            else if (item.u === StyleUnit.BLOOM) {
+              item.v.threshold.v += d.threshold! * percent;
+              item.v.knee.v += d.knee! * percent;
+            }
+          });
         }
       });
       // 固定部分
@@ -421,15 +433,35 @@ function calTransition(node: Node, keyFrames: KeyFrame[], keys: (keyof Style)[])
           prev.fixed.push(key);
         }
       }
-      else if (key === 'blur') {
-        if ((p as StyleBlurValue).v.t === (n as StyleBlurValue).v.t) {
+      else if (key === 'filter') {
+        const pk = (p as StyleFilter[]).map(item => item.u).join(',');
+        const nk = (n as StyleFilter[]).map(item => item.u).join(',');
+        if (pk === nk) {
           prev.transition.push({
             key,
-            diff: {
-              radius: (n as StyleBlurValue).v.radius.v - (p as StyleBlurValue).v.radius.v,
-              angle: ((n as StyleBlurValue).v.angle?.v || 0) - ((p as StyleBlurValue).v.angle?.v || 0),
-              offset: ((n as StyleBlurValue).v.offset?.v || 0) - ((p as StyleBlurValue).v.offset?.v || 0),
-            },
+            diff: (p as StyleFilter[]).map((item, i) => {
+              const item2 = (n as StyleFilter[])[i];
+              const o = {
+                radius: item2.v.radius.v - item.v.radius.v,
+              } as FilterTransition;
+              if (item.u === StyleUnit.GAUSS_BLUR) {
+              }
+              else if (item.u === StyleUnit.RADIAL_BLUR) {
+                o.center = [
+                  calLengthByUnit((item2 as RadialBlur).v.center[0], item.v.center[0], node.computedStyle.width),
+                  calLengthByUnit((item2 as RadialBlur).v.center[1], item.v.center[1], node.computedStyle.height),
+                ];
+              }
+              else if (item.u === StyleUnit.MOTION_BLUR) {
+                o.angle = (item2 as MotionBlur).v.angle.v - (item as MotionBlur).v.angle.v;
+                o.offset = (item2 as MotionBlur).v.offset.v - (item as MotionBlur).v.offset.v;
+              }
+              else if (item.u === StyleUnit.BLOOM) {
+                o.threshold = (item2 as Bloom).v.threshold.v - (item as Bloom).v.threshold.v;
+                o.knee = (item2 as Bloom).v.knee.v - (item as Bloom).v.knee.v;
+              }
+              return o;
+            }),
           });
         }
         else {
