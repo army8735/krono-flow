@@ -7,7 +7,7 @@ import {
   EncodedAudioPacketSource,
   WebMOutputFormat,
 } from 'mediabunny';
-import { AudioChunk } from './decoder';
+import { AudioChunk, sleep } from './decoder';
 
 export enum EncoderType {
   INIT = 0,
@@ -244,6 +244,18 @@ export const onMessage = async (e: MessageEvent<{
     encoderFrameCount++;
     const videoFrame = e.data.videoFrame;
     if (videoEncoder && videoEncoder.state === 'configured' && videoFrame) {
+      // 并发太多控制一下
+      if (videoEncoder.encodeQueueSize > 5) {
+        await sleep(100);
+        for (let i = 0; i < 10; i++) {
+          if (videoEncoder.encodeQueueSize > 5) {
+            await sleep(100);
+          }
+          else {
+            break;
+          }
+        }
+      }
       videoEncoder.encode(videoFrame);
     }
     videoFrame?.close();
