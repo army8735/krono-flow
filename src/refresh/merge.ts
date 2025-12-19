@@ -600,7 +600,10 @@ function genFilter(
         res = t;
       }
     }
-    else if (item.u === StyleUnit.BLOOM) {}
+    else if (item.u === StyleUnit.BLOOM) {
+      if (item.radius >= 1) {
+      }
+    }
   });
   // 颜色调整
   // if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {

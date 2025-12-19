@@ -473,7 +473,7 @@ function calTransition(node: Node, keyFrames: KeyFrame[], keys: (keyof Style)[])
               o.knee = (item2 as Bloom).v.knee.v - (item as Bloom).v.knee.v;
             }
             diff.push(o);
-          } console.log(diff);
+          }
           prev.transition.push({
             key,
             diff,
