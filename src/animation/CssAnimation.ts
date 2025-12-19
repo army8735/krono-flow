@@ -171,6 +171,10 @@ export class CssAnimation extends AbstractAnimation {
           const o = cloneStyle(style, key).filter as StyleFilter[];
           o.forEach((item, i) => {
             const d = (diff as FilterTransition[])[i];
+            // 可能数量对不上，只对得上的部分做动画
+            if (!d) {
+              return;
+            }
             item.v.radius.v += d.radius * percent;
             if (item.u === StyleUnit.RADIAL_BLUR) {
               item.v.center[0].v += d.center![0] * percent;
@@ -185,6 +189,7 @@ export class CssAnimation extends AbstractAnimation {
               item.v.knee.v += d.knee! * percent;
             }
           });
+          update[key] = o;
         }
       });
       // 固定部分
@@ -434,34 +439,44 @@ function calTransition(node: Node, keyFrames: KeyFrame[], keys: (keyof Style)[])
         }
       }
       else if (key === 'filter') {
-        const pk = (p as StyleFilter[]).map(item => item.u).join(',');
-        const nk = (n as StyleFilter[]).map(item => item.u).join(',');
-        if (pk === nk) {
+        const ps = (p as StyleFilter[]);
+        const ns = (n as StyleFilter[]);
+        let equal = true;
+        for (let i = 0, len = Math.min(ps.length, ns.length); i < len; i++) {
+          if (ps[i].u !== ns[i].u) {
+            equal = false;
+            break;
+          }
+        }
+        if (equal) {
+          const diff: FilterTransition[] = [];
+          for (let i = 0, len = Math.min(ps.length, ns.length); i < len; i++) {
+            const item = ps[i];
+            const item2 = ns[i];
+            const o = {
+              radius: item2.v.radius.v - item.v.radius.v,
+            } as FilterTransition;
+            if (item.u === StyleUnit.GAUSS_BLUR) {
+            }
+            else if (item.u === StyleUnit.RADIAL_BLUR) {
+              o.center = [
+                calLengthByUnit((item2 as RadialBlur).v.center[0], item.v.center[0], node.computedStyle.width),
+                calLengthByUnit((item2 as RadialBlur).v.center[1], item.v.center[1], node.computedStyle.height),
+              ];
+            }
+            else if (item.u === StyleUnit.MOTION_BLUR) {
+              o.angle = (item2 as MotionBlur).v.angle.v - (item as MotionBlur).v.angle.v;
+              o.offset = (item2 as MotionBlur).v.offset.v - (item as MotionBlur).v.offset.v;
+            }
+            else if (item.u === StyleUnit.BLOOM) {
+              o.threshold = (item2 as Bloom).v.threshold.v - (item as Bloom).v.threshold.v;
+              o.knee = (item2 as Bloom).v.knee.v - (item as Bloom).v.knee.v;
+            }
+            diff.push(o);
+          } console.log(diff);
           prev.transition.push({
             key,
-            diff: (p as StyleFilter[]).map((item, i) => {
-              const item2 = (n as StyleFilter[])[i];
-              const o = {
-                radius: item2.v.radius.v - item.v.radius.v,
-              } as FilterTransition;
-              if (item.u === StyleUnit.GAUSS_BLUR) {
-              }
-              else if (item.u === StyleUnit.RADIAL_BLUR) {
-                o.center = [
-                  calLengthByUnit((item2 as RadialBlur).v.center[0], item.v.center[0], node.computedStyle.width),
-                  calLengthByUnit((item2 as RadialBlur).v.center[1], item.v.center[1], node.computedStyle.height),
-                ];
-              }
-              else if (item.u === StyleUnit.MOTION_BLUR) {
-                o.angle = (item2 as MotionBlur).v.angle.v - (item as MotionBlur).v.angle.v;
-                o.offset = (item2 as MotionBlur).v.offset.v - (item as MotionBlur).v.offset.v;
-              }
-              else if (item.u === StyleUnit.BLOOM) {
-                o.threshold = (item2 as Bloom).v.threshold.v - (item as Bloom).v.threshold.v;
-                o.knee = (item2 as Bloom).v.knee.v - (item as Bloom).v.knee.v;
-              }
-              return o;
-            }),
+            diff,
           });
         }
         else {

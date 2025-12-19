@@ -580,21 +580,25 @@ export function genMotionBlur(
   offset: number,
   W: number,
   H: number,
+  willSpread = false,
+  willLimit = false,
 ) {
   const radian = d2r(angle);
-  const spread = sigma * 3;
+  const spread = willSpread ? sigma * 3 : 0;
   const kernel = sigma; // 两个方向均分
   const bboxS = textureTarget.bbox;
   const bboxR = bboxS.slice(0);
   // 运动模糊水平垂直增加尺寸三角函数计算
-  const sin = Math.sin(radian);
-  const cos = Math.cos(radian);
-  const spreadY = Math.abs(Math.ceil(sin * spread));
-  const spreadX = Math.abs(Math.ceil(cos * spread));
-  bboxR[0] -= spreadX;
-  bboxR[1] -= spreadY;
-  bboxR[2] += spreadX;
-  bboxR[3] += spreadY;
+  if (spread) {
+    const sin = Math.sin(radian);
+    const cos = Math.cos(radian);
+    const spreadY = Math.abs(Math.ceil(sin * spread));
+    const spreadX = Math.abs(Math.ceil(cos * spread));
+    bboxR[0] -= spreadX;
+    bboxR[1] -= spreadY;
+    bboxR[2] += spreadX;
+    bboxR[3] += spreadY;
+  }
   // 写到一个扩展好尺寸的tex中方便后续处理
   const x = bboxR[0],
     y = bboxR[1];
@@ -617,7 +621,7 @@ export function genMotionBlur(
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
     // sigma要么为0不会进入，要么>=1，*2后最小值为2，不会触发glsl中kernel的/0问题
-    const tex = t && drawMotion(gl, motion, t, kernel, radian, offset, w, h);
+    const tex = t && drawMotion(gl, motion, t, kernel, radian, offset, w, h, willLimit);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -667,7 +671,7 @@ export function genMotionBlur(
       }
       if (hasDraw) {
         CacheProgram.useProgram(gl, motion);
-        item.t = drawMotion(gl, motion, t, kernel, radian, offset, w, h);
+        item.t = drawMotion(gl, motion, t, kernel, radian, offset, w, h, willLimit);
       }
       gl.deleteTexture(t);
     }

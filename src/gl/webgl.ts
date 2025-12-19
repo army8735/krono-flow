@@ -637,11 +637,19 @@ export function drawMotion(
   offset: number, // 偏移，和半径相同就等于是一个方向模糊
   width: number,
   height: number,
+  willLimit = false,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
   // 参数，内核长度，根据长度计算的纹理参考坐标范围，偏移范围
-  const u_kernel = cacheProgram.uniform.u_kernel;
-  gl.uniform1i(u_kernel, Math.floor(kernel));
+  const k = Math.floor(kernel);
+  if (k !== cacheProgram.uniformValue.u_kernel) {
+    const u_kernel = cacheProgram.uniform.u_kernel;
+    gl.uniform1i(u_kernel, Math.floor(kernel));
+  }
+  if (willLimit !== cacheProgram.uniformValue.u_limit) {
+    const u_limit = cacheProgram.uniform.u_limit;
+    gl.uniform1i(u_limit, willLimit ? 1 : 0);
+  }
   const sin = Math.sin(radian) * kernel / height;
   const cos = Math.cos(radian) * kernel / width;
   const h = Math.sin(radian) * offset / height;

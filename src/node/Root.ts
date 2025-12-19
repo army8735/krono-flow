@@ -411,7 +411,7 @@ class Root extends Container {
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.motion = new CacheProgram(gl, initShaders(gl, simpleVert, motionFrag), {
-      uniform: ['u_kernel', 'u_velocity', 'u_texture'],
+      uniform: ['u_kernel', 'u_velocity', 'u_texture', 'u_limit'],
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.radial = new CacheProgram(gl, initShaders(gl, simpleVert, radialFrag), {

@@ -845,23 +845,23 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: keyof Style)
       if (ai.u !== bi.u) {
         return false;
       }
-      if (ai.radius.v !== bi.radius.v) {
+      if (ai.v.radius.v !== bi.v.radius.v) {
         return false;
       }
       if (ai.u === StyleUnit.GAUSS_BLUR) {
       }
       else if (ai.u === StyleUnit.RADIAL_BLUR) {
-        if (ai.center[0].v !== bi.center[0].v || ai.center[1].v !== bi.center[1].v) {
+        if (ai.v.center[0].v !== bi.v.center[0].v || ai.v.center[1].v !== bi.v.center[1].v) {
           return false;
         }
       }
       else if (ai.u === StyleUnit.MOTION_BLUR) {
-        if (ai.angle.v !== bi.angle.v || ai.offset.v !== bi.offset.v) {
+        if (ai.v.angle.v !== bi.v.angle.v || ai.v.offset.v !== bi.v.offset.v) {
           return false;
         }
       }
       else if (ai.u === StyleUnit.BLOOM) {
-        if (ai.threshold.v !== bi.threshold.v || ai.knee.v !== bi.knee.v) {
+        if (ai.v.threshold.v !== bi.v.threshold.v || ai.v.knee.v !== bi.v.knee.v) {
           return false;
         }
       }
@@ -919,6 +919,28 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
     }
     else if (k === 'fill' || k === 'stroke' || k === 'filter') {
       res[k] = v.map((item: any) => clone(item));
+    }
+    else if (k === 'filter') {
+      res[k] = v.map((item: StyleFilter) => {
+        const o: any = {
+          radius: Object.assign({}, item.v.radius),
+        };
+        if (item.u === StyleUnit.RADIAL_BLUR) {
+          o.center = item.v.center.map(item => Object.assign({}, item));
+        }
+        else if (item.u === StyleUnit.MOTION_BLUR) {
+          o.angle = Object.assign({}, item.v.angle);
+          o.offset = Object.assign({}, item.v.offset);
+        }
+        else if (item.u === StyleUnit.BLOOM) {
+          o.threshold = Object.assign({}, item.v.threshold);
+          o.knee = Object.assign({}, item.v.knee);
+        }
+        return {
+          v: o,
+          u: item.u,
+        };
+      });
     }
     else if (
       k === 'fillEnable' ||

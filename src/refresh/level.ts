@@ -113,13 +113,7 @@ export function getLevel(k: string) {
   if (k === 'perspectiveSelf') {
     return RefreshLevel.PERSPECTIVE_SELF;
   }
-  if (k === 'blur' ||
-    k === 'shadow' ||
-    k === 'shadowEnable' ||
-    k === 'hueRotate' ||
-    k === 'saturate' ||
-    k === 'brightness' ||
-    k === 'contrast') {
+  if (k === 'filter') {
     return RefreshLevel.FILTER;
   }
   if (k === 'mixBlendMode') {
