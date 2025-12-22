@@ -22,6 +22,10 @@ import simpleVert from '../gl/simple.vert';
 import cmFrag from '../gl/cm.frag';
 import maskFrag from '../gl/mask.frag';
 import maskGrayFrag from '../gl/maskGray.frag';
+import bloomFrag from '../gl/bloom.frag';
+import bloomBlurFrag from '../gl/bloomBlur.frag';
+import dualDown13Frag from '../gl/dualDown13.frag';
+import dualUp13Frag from '../gl/dualUp13.frag';
 import AbstractAnimation from '../animation/AbstractAnimation';
 import AniController from '../animation/AniController';
 import { CAN_PLAY, REFRESH, REFRESH_COMPLETE, WAITING } from '../refresh/refreshEvent';
@@ -403,7 +407,7 @@ class Root extends Container {
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.dualDown = new CacheProgram(gl, initShaders(gl, simpleVert, dualDownFrag), {
-      uniform: ['u_x', 'u_y', 'u_texture'],
+      uniform: ['u_xy', 'u_texture'],
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.dualUp = new CacheProgram(gl, initShaders(gl, simpleVert, dualUpFrag), {
@@ -428,6 +432,22 @@ class Root extends Container {
     });
     this.programs.maskGray = new CacheProgram(gl, initShaders(gl, simpleVert, maskGrayFrag), {
       uniform: ['u_texture1', 'u_texture2', 'u_d'],
+      attrib: ['a_position', 'a_texCoords'],
+    });
+    this.programs.bloom = new CacheProgram(gl, initShaders(gl, simpleVert, bloomFrag), {
+      uniform: ['u_texture1', 'u_texture2', 'u_threshold'],
+      attrib: ['a_position', 'a_texCoords'],
+    });
+    this.programs.bloomBlur = new CacheProgram(gl, initShaders(gl, simpleVert, bloomBlurFrag), {
+      uniform: ['u_texture', 'u_threshold'],
+      attrib: ['a_position', 'a_texCoords'],
+    });
+    this.programs.dualDown13 = new CacheProgram(gl, initShaders(gl, simpleVert, dualDown13Frag), {
+      uniform: ['u_xy', 'u_texture'],
+      attrib: ['a_position', 'a_texCoords'],
+    });
+    this.programs.dualUp13 = new CacheProgram(gl, initShaders(gl, simpleVert, dualUp13Frag), {
+      uniform: ['u_xy', 'u_texture1', 'u_texture2'],
       attrib: ['a_position', 'a_texCoords'],
     });
     CacheProgram.useProgram(gl, this.programs.main);

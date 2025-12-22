@@ -37,6 +37,8 @@ export default {
     this.MAX_TEXTURE_IMAGE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
   },
+  defaultFontFamily: 'Arial',
+  defaultFontSize: 16,
   historyTime: 1000, // 添加历史记录时命令之间是否合并的时间差阈值
   decoderWorker: '',
   decoderWorkerStr: '',

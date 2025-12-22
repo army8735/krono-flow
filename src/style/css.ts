@@ -33,6 +33,7 @@ import reg from './reg';
 import { color2rgbaInt, color2rgbaStr } from './color';
 import font from './font';
 import { convert2Css, isGradient, parseGradient } from './gradient';
+import config from '../config';
 
 function compatibleTransform(k: string, v: StyleNumValue) {
   if (k === 'scaleX' || k === 'scaleY') {
@@ -99,9 +100,9 @@ export function normalize(style: Partial<JStyle>) {
     };
   }
   if (style.fontSize !== undefined) {
-    let n = calUnit(style.fontSize || inject.defaultFontSize, true);
+    let n = calUnit(style.fontSize || config.defaultFontSize, true);
     if (n.v <= 0) {
-      n.v = inject.defaultFontSize;
+      n.v = config.defaultFontSize;
     }
     res.fontSize = n;
   }
@@ -594,21 +595,15 @@ export function normalize(style: Partial<JStyle>) {
         }
         else if (k === 'bloom') {
           const n = parseFloat(v) || 0;
-          const mt = /,\s*(.+)\s*(?:,\s*(.+))?/.exec(v);
-          const threshold = { v: 1, u: StyleUnit.NUMBER } as StyleNumValue;
+          const mk = /,\s*([^,]+)/.exec(v);
           const knee = { v: 0.5, u: StyleUnit.NUMBER } as StyleNumValue;
-          if (mt) {
-            const b = calUnit(mt[1] as string | number);
-            threshold.v = Math.max(0, b.v);
-            if (mt[2]) {
-              const k = calUnit(mt[2] as string | number);
-              knee.v = Math.max(0, Math.min(k.v, threshold.v));
-            }
+          if (mk) {
+            const b = calUnit(mk[1] as string | number);
+            knee.v = Math.max(0, b.v);
           }
           filter.push({
             v: {
-              radius: { v: Math.max(n, 0), u: StyleUnit.PX },
-              threshold,
+              threshold: { v: Math.max(n, 0), u: StyleUnit.NUMBER },
               knee,
             },
             u: StyleUnit.BLOOM,
@@ -622,8 +617,8 @@ export function normalize(style: Partial<JStyle>) {
 }
 
 export function setFontStyle(style: ComputedStyle | ComputedRich) {
-  const fontSize = style.fontSize || inject.defaultFontSize;
-  let fontFamily = style.fontFamily || inject.defaultFontFamily;
+  const fontSize = style.fontSize || config.defaultFontSize;
+  let fontFamily = style.fontFamily || config.defaultFontFamily;
   // fontFamily += ',' + 'pingfangsc-regular';
   if (/[\s.,/\\]/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
@@ -652,7 +647,7 @@ export function calFontFamily(fontFamily: string) {
       return item;
     }
   }
-  return inject.defaultFontFamily;
+  return config.defaultFontFamily;
 }
 
 export function calNormalLineHeight(style: Pick<ComputedStyle, 'fontFamily' | 'fontSize'>, ff?: string) {
@@ -660,7 +655,7 @@ export function calNormalLineHeight(style: Pick<ComputedStyle, 'fontFamily' | 'f
     ff = calFontFamily(style.fontFamily);
   }
   const lhr =
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.Arial || {})
+    (font.data[ff] || font.data[config.defaultFontFamily] || font.data.Arial || {})
       .lhr;
   return style.fontSize * lhr;
 }
@@ -674,7 +669,7 @@ export function getBaseline(style: Pick<ComputedStyle, 'fontSize' | 'fontFamily'
   const ff = calFontFamily(style.fontFamily);
   const normal = calNormalLineHeight(style, ff);
   const blr =
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.Arial || {})
+    (font.data[ff] || font.data[config.defaultFontFamily] || font.data.Arial || {})
       .blr || 1;
   return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * blr;
 }
@@ -684,7 +679,7 @@ export function getContentArea(style: Pick<ComputedStyle, 'fontSize' | 'fontFami
   const ff = calFontFamily(style.fontFamily);
   const normal = calNormalLineHeight(style, ff);
   const car =
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.Arial || {})
+    (font.data[ff] || font.data[config.defaultFontFamily] || font.data.Arial || {})
       .car || 1;
   return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * car;
 }
@@ -845,17 +840,23 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: keyof Style)
       if (ai.u !== bi.u) {
         return false;
       }
-      if (ai.v.radius.v !== bi.v.radius.v) {
-        return false;
-      }
       if (ai.u === StyleUnit.GAUSS_BLUR) {
+        if (ai.v.radius.v !== bi.v.radius.v) {
+          return false;
+        }
       }
       else if (ai.u === StyleUnit.RADIAL_BLUR) {
+        if (ai.v.radius.v !== bi.v.radius.v) {
+          return false;
+        }
         if (ai.v.center[0].v !== bi.v.center[0].v || ai.v.center[1].v !== bi.v.center[1].v) {
           return false;
         }
       }
       else if (ai.u === StyleUnit.MOTION_BLUR) {
+        if (ai.v.radius.v !== bi.v.radius.v) {
+          return false;
+        }
         if (ai.v.angle.v !== bi.v.angle.v || ai.v.offset.v !== bi.v.offset.v) {
           return false;
         }
@@ -922,13 +923,13 @@ export function cloneStyle(style: Partial<Style>, keys?: string | string[]) {
     }
     else if (k === 'filter') {
       res[k] = v.map((item: StyleFilter) => {
-        const o: any = {
-          radius: Object.assign({}, item.v.radius),
-        };
+        const o: any = {};
         if (item.u === StyleUnit.RADIAL_BLUR) {
+          o.radius = Object.assign({}, item.v.radius);
           o.center = item.v.center.map(item => Object.assign({}, item));
         }
         else if (item.u === StyleUnit.MOTION_BLUR) {
+          o.radius = Object.assign({}, item.v.radius);
           o.angle = Object.assign({}, item.v.angle);
           o.offset = Object.assign({}, item.v.offset);
         }
@@ -1049,7 +1050,7 @@ export function getCssFilter(filter: ComputedFilter) {
     return 'motion(' + filter.radius + ',' + filter.offset + ')';
   }
   else if (filter.u === StyleUnit.BLOOM) {
-    return 'motion(' + filter.radius + ',' + filter.threshold + ',' + filter.knee + ')';
+    return 'motion(' + filter.threshold + ',' + filter.knee + ')';
   }
 }
 

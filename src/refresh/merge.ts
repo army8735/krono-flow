@@ -8,19 +8,14 @@ import { Struct } from './struct';
 import { ceilBbox, mergeBbox } from '../math/bbox';
 import TextureCache, { SubTexture } from './TextureCache';
 import config from '../config';
-import {
-  createTexture,
-  drawMask,
-  drawMbm,
-  drawTextureCache,
-  // texture2Blob,
-} from '../gl/webgl';
+import { createTexture, drawMask, drawMbm, drawTextureCache, } from '../gl/webgl';
 import inject from '../util/inject';
 import { genGaussBlur, genMotionBlur, genRadialBlur } from './blur';
 import { genFrameBufferWithTexture, releaseFrameBuffer } from './fb';
 import { checkInRect } from './check';
 import CacheProgram from '../gl/CacheProgram';
 import { calMatrixByOrigin, calPerspectiveMatrix } from '../style/transform';
+import { genBloom } from './bloom';
 
 export type Merge = {
   i: number;
@@ -72,6 +67,9 @@ export function genMerge(
       && total > 0
       && !textureTotal?.available;
     const needFilter = filter.map(item => {
+      if (item.u === StyleUnit.BLOOM) {
+        return item.threshold > 0;
+      }
       return item.radius >= 1;
     }).filter(item => item).length > 0 && !textureFilter?.available;
     let needMask = maskMode > 0 && !textureMask?.available;
@@ -558,7 +556,7 @@ function genFilter(
   filter.forEach(item => {
     if (item.u === StyleUnit.GAUSS_BLUR) {
       if (item.radius >= 1) {
-        const t = genGaussBlur(gl, root, res || source, item.radius, W, H);
+        const t = genGaussBlur(gl, root, node, res || source, item.radius, W, H);
         if (res) {
           res.release();
         }
@@ -570,6 +568,7 @@ function genFilter(
         const t = genRadialBlur(
           gl,
           root,
+          node,
           res || source,
           item.radius,
           item.center,
@@ -587,6 +586,7 @@ function genFilter(
         const t = genMotionBlur(
           gl,
           root,
+          node,
           res || source,
           item.radius,
           item.angle, // 一定有，0兜底
@@ -601,7 +601,21 @@ function genFilter(
       }
     }
     else if (item.u === StyleUnit.BLOOM) {
-      if (item.radius >= 1) {
+      if (item.threshold > 0) {
+        const t = genBloom(
+          gl,
+          root,
+          node,
+          res || source,
+          item.threshold,
+          item.knee,
+          W,
+          H,
+        );
+        if (res) {
+          res.release();
+        }
+        res = t;
       }
     }
   });

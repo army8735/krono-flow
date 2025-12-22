@@ -143,8 +143,6 @@ const inject = {
       return o instanceof WebGLTexture;
     }
   },
-  defaultFontFamily: 'Arial',
-  defaultFontSize: 16,
   getFontCanvas() {
     return inject.getOffscreenCanvas(
       16,
@@ -155,7 +153,7 @@ const inject = {
   },
   checkSupportFontFamily(ff: string) {
     // 强制arial兜底
-    if (ff === this.defaultFontFamily) {
+    if (ff === config.defaultFontFamily) {
       return true;
     }
     if (SUPPORT_FONT.hasOwnProperty(ff)) {
@@ -168,7 +166,7 @@ const inject = {
     context.textBaseline = 'middle';
     if (!defaultFontFamilyData) {
       context.clearRect(0, 0, 16, 16);
-      context.font = '16px ' + this.defaultFontFamily;
+      context.font = '16px ' + config.defaultFontFamily;
       context.fillText('a', 8, 8);
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
     }
@@ -176,7 +174,7 @@ const inject = {
     if (/\s/.test(ff)) {
       ff = '"' + ff.replace(/"/g, '\\"') + '"';
     }
-    context.font = '16px ' + ff + ',' + this.defaultFontFamily;
+    context.font = '16px ' + ff + ',' + config.defaultFontFamily;
     context.fillText('a', 8, 8);
     const data = context.getImageData(0, 0, 16, 16).data;
     for (let i = 0, len = data.length; i < len; i++) {

@@ -43,22 +43,23 @@ export function calComputedStroke(stroke: Style['stroke']) {
 export function calComputedFilter(filter: Style['filter'], w: number, h: number) {
   return filter.map(item => {
     const { v, u } = item;
-    const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
     if (u === StyleUnit.GAUSS_BLUR) {
+      const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
       return { radius, u };
     }
     else if (u === StyleUnit.RADIAL_BLUR) {
+      const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
       const center = v.center.map((n, i) => {
         return n.u === StyleUnit.PERCENT ? n.v * (i ? h : w) * 0.01 : n.v;
       }) as [number, number];
       return { radius, center, u };
     }
     else if (u === StyleUnit.MOTION_BLUR) {
+      const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
       return { radius, angle: v.angle.v, offset: v.offset.v, u };
     }
     else if (u === StyleUnit.BLOOM) {
-      const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
-      return { radius, threshold: v.threshold.v, knee: v.knee.v, u };
+      return { threshold: v.threshold.v, knee: v.knee.v, u };
     }
   }) as ComputedFilter[];
 }

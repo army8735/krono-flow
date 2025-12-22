@@ -3,7 +3,16 @@ import Node from '../node/Node';
 import { JStyle } from '../format';
 import easing from './easing';
 import { isFunction, isNumber, isString } from '../util/type';
-import { Bloom, MotionBlur, RadialBlur, Style, StyleFilter, StyleNumValue, StyleUnit } from '../style/define';
+import {
+  Bloom,
+  GaussBlur,
+  MotionBlur,
+  RadialBlur,
+  Style,
+  StyleFilter,
+  StyleNumValue,
+  StyleUnit,
+} from '../style/define';
 import css, { cloneStyle } from '../style/css';
 
 export type JKeyFrame = Partial<JStyle> & {
@@ -12,7 +21,7 @@ export type JKeyFrame = Partial<JStyle> & {
 };
 
 type FilterTransition = {
-  radius: number, angle?: number, offset?: number, center?: [number, number], threshold?: number, knee?: number,
+  radius?: number, angle?: number, offset?: number, center?: [number, number], threshold?: number, knee?: number,
 };
 
 export type KeyFrame = {
@@ -175,12 +184,16 @@ export class CssAnimation extends AbstractAnimation {
             if (!d) {
               return;
             }
-            item.v.radius.v += d.radius * percent;
+            if (item.u === StyleUnit.GAUSS_BLUR) {
+              item.v.radius.v += d.radius! * percent;
+            }
             if (item.u === StyleUnit.RADIAL_BLUR) {
+              item.v.radius.v += d.radius! * percent;
               item.v.center[0].v += d.center![0] * percent;
               item.v.center[1].v += d.center![1] * percent;
             }
             else if (item.u === StyleUnit.MOTION_BLUR) {
+              item.v.radius.v += d.radius! * percent;
               item.v.angle.v += d.angle! * percent;
               item.v.offset.v += d.offset! * percent;
             }
@@ -453,18 +466,19 @@ function calTransition(node: Node, keyFrames: KeyFrame[], keys: (keyof Style)[])
           for (let i = 0, len = Math.min(ps.length, ns.length); i < len; i++) {
             const item = ps[i];
             const item2 = ns[i];
-            const o = {
-              radius: item2.v.radius.v - item.v.radius.v,
-            } as FilterTransition;
+            const o = {} as FilterTransition;
             if (item.u === StyleUnit.GAUSS_BLUR) {
+              o.radius = (item2 as GaussBlur).v.radius.v - item.v.radius.v;
             }
             else if (item.u === StyleUnit.RADIAL_BLUR) {
+              o.radius = (item2 as RadialBlur).v.radius.v - item.v.radius.v;
               o.center = [
                 calLengthByUnit((item2 as RadialBlur).v.center[0], item.v.center[0], node.computedStyle.width),
                 calLengthByUnit((item2 as RadialBlur).v.center[1], item.v.center[1], node.computedStyle.height),
               ];
             }
             else if (item.u === StyleUnit.MOTION_BLUR) {
+              o.radius = (item2 as MotionBlur).v.radius.v - item.v.radius.v;
               o.angle = (item2 as MotionBlur).v.angle.v - (item as MotionBlur).v.angle.v;
               o.offset = (item2 as MotionBlur).v.offset.v - (item as MotionBlur).v.offset.v;
             }

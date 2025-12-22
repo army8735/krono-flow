@@ -463,14 +463,13 @@ export type ComputedMotionBlur = { radius: number, angle: number, offset: number
 
 export type Bloom = {
   v: {
-    radius: StyleNumValue;
     threshold: StyleNumValue;
     knee: StyleNumValue;
   },
   u: StyleUnit.BLOOM;
 };
 
-export type ComputedBloom = { radius: number, threshold: number, knee: number, u: StyleUnit.BLOOM };
+export type ComputedBloom = { threshold: number, knee: number, u: StyleUnit.BLOOM };
 
 export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom;
 

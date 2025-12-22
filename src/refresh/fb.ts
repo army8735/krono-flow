@@ -22,8 +22,8 @@ export function genFrameBufferWithTexture(
 export function releaseFrameBuffer(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   frameBuffer: WebGLFramebuffer,
-  width: number,
-  height: number,
+  width?: number,
+  height?: number,
 ) {
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
@@ -34,6 +34,7 @@ export function releaseFrameBuffer(
   );
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
-  gl.viewport(0, 0, width, height);
+  if (width && height) {
+    gl.viewport(0, 0, width, height);
+  }
 }
-

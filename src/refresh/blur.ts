@@ -1,4 +1,5 @@
 import Root from '../node/Root';
+import Node from '../node/Node';
 import { boxesForGauss, gaussKernel, gaussSizeByD } from '../math/blur';
 import TextureCache from './TextureCache';
 import {
@@ -9,11 +10,11 @@ import {
   drawTextureCache,
   // texture2Blob,
 } from '../gl/webgl';
-import { releaseFrameBuffer } from './fb';
+import { genFrameBufferWithTexture, releaseFrameBuffer } from './fb';
 import { checkInRect } from './check';
 import { d2r } from '../math/geom';
 import CacheProgram from '../gl/CacheProgram';
-import { createInOverlay, drawInOverlay, drawInSpreadBbox } from './spread';
+import { createInOverlay, drawInOverlay, drawInSpreadBbox, needReGen } from './spread';
 
 /**
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -25,19 +26,24 @@ import { createInOverlay, drawInOverlay, drawInSpreadBbox } from './spread';
 export function genGaussBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
+  node: Node,
   textureTarget: TextureCache,
   sigma: number,
   W: number,
   H: number,
+  willSpread = false,
+  willLimit = false,
 ) {
   const d = gaussKernel(sigma);
-  const spread = gaussSizeByD(d);
+  const spread = willSpread ? gaussSizeByD(d) : 0;
   const bboxS = textureTarget.bbox;
   const bboxR = bboxS.slice(0);
-  bboxR[0] -= spread;
-  bboxR[1] -= spread;
-  bboxR[2] += spread;
-  bboxR[3] += spread;
+  if (spread) {
+    bboxR[0] -= spread;
+    bboxR[1] -= spread;
+    bboxR[2] += spread;
+    bboxR[3] += spread;
+  }
   // 写到一个扩展好尺寸的tex中方便后续处理
   const x = bboxR[0],
     y = bboxR[1];
@@ -46,11 +52,16 @@ export function genGaussBlur(
   const programs = root.programs;
   const main = programs.main;
   CacheProgram.useProgram(gl, main);
-  const temp = TextureCache.getEmptyInstance(gl, bboxR);
-  temp.available = true;
-  const listT = temp.list;
+  let temp: TextureCache | undefined;
+  if (spread || needReGen(node, w, h)) {
+    temp = TextureCache.getEmptyInstance(gl, bboxR);
+    temp.available = true;
+  }
+  const listT = temp ? temp.list: textureTarget.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
-  const frameBuffer = drawInSpreadBbox(gl, main, textureTarget, temp, x, y, w, h);
+  const frameBuffer = temp
+    ? drawInSpreadBbox(gl, main, textureTarget, temp, x, y, w, h)
+    : genFrameBufferWithTexture(gl, textureTarget.list[0].t, w, h);
   const dualTimes = getDualTimesFromSigma(sigma);
   const boxes = boxesForGauss(sigma * Math.pow(0.5, dualTimes));
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
@@ -118,7 +129,7 @@ export function genGaussBlur(
     drawInOverlay(gl, main, res, listO, bboxR, spread);
   }
   // 删除fbo恢复
-  temp.release();
+  temp && temp.release();
   CacheProgram.useProgram(gl, main);
   releaseFrameBuffer(gl, frameBuffer!, W, H);
   return res;
@@ -207,15 +218,18 @@ function genScaleGaussBlur(
 export function genRadialBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
+  node: Node,
   textureTarget: TextureCache,
   sigma: number, // 采样距离
   center: [number, number], // 中心点
   W: number,
   H: number,
+  willSpread = false,
+  willLimit = false,
 ) {
   const bboxS = textureTarget.bbox;
   const d = gaussKernel(sigma);
-  const spread = gaussSizeByD(d);
+  const spread = willSpread ? gaussSizeByD(d) : 0;
   const bboxR = bboxS.slice(0);
   // 根据center和shader算法得四周扩展，中心点和四边距离是向量长度r，spread*2/diagonal是扩展比例
   const w1 = bboxR[2] - bboxR[0],
@@ -239,11 +253,16 @@ export function genRadialBlur(
     h = bboxR[3] - bboxR[1];
   const programs = root.programs;
   const main = programs.main;
-  const temp = TextureCache.getEmptyInstance(gl, bboxR);
-  temp.available = true;
-  const listT = temp.list;
+  let temp: TextureCache | undefined;
+  if (spread || needReGen(node, w, h)) {
+    temp = TextureCache.getEmptyInstance(gl, bboxR);
+    temp.available = true;
+  }
+  const listT = temp ? temp.list : textureTarget.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
-  const frameBuffer = drawInSpreadBbox(gl, main, textureTarget, temp, x, y, w, h);
+  const frameBuffer = temp
+    ? drawInSpreadBbox(gl, main, textureTarget, temp, x, y, w, h)
+    : genFrameBufferWithTexture(gl, textureTarget.list[0].t, w, h);
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const radial = programs.radial;
   CacheProgram.useProgram(gl, radial);
@@ -327,7 +346,7 @@ export function genRadialBlur(
     drawInOverlay(gl, main, res, listO, bboxR, spread);
   }
   // 删除fbo恢复
-  temp.release();
+  temp && temp.release();
   CacheProgram.useProgram(gl, main);
   releaseFrameBuffer(gl, frameBuffer, W, H);
   return res;
@@ -340,6 +359,7 @@ export function genRadialBlur(
 export function genMotionBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
+  node: Node,
   textureTarget: TextureCache,
   sigma: number,
   angle: number,
@@ -372,11 +392,16 @@ export function genMotionBlur(
     h = bboxR[3] - bboxR[1];
   const programs = root.programs;
   const main = programs.main;
-  const temp = TextureCache.getEmptyInstance(gl, bboxR);
-  temp.available = true;
-  const listT = temp.list;
-  // 由于存在扩展，原本的位置全部偏移，需要重算
-  const frameBuffer = drawInSpreadBbox(gl, main, textureTarget, temp, x, y, w, h);
+  let temp: TextureCache | undefined;
+  if (spread || needReGen(node, w, h)) {
+    temp = TextureCache.getEmptyInstance(gl, bboxR);
+    temp.available = true;
+  }
+  const listT = temp ? temp.list : textureTarget.list;
+  // 由于存在扩展，原本的位置全部偏移，需要重算，不扩展使用原本的
+  const frameBuffer = temp
+    ? drawInSpreadBbox(gl, main, textureTarget, temp, x, y, w, h)
+    : genFrameBufferWithTexture(gl, textureTarget.list[0].t, w, h);
   // 迭代运动模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const motion = programs.motion;
   CacheProgram.useProgram(gl, motion);
@@ -386,7 +411,6 @@ export function genMotionBlur(
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
-    // sigma要么为0不会进入，要么>=1，*2后最小值为2，不会触发glsl中kernel的/0问题
     const tex = t && drawMotion(gl, motion, t, kernel, radian, offset, w, h, willLimit);
     listR.push({
       bbox: bbox.slice(0),
@@ -444,7 +468,7 @@ export function genMotionBlur(
     drawInOverlay(gl, main, res, listO, bboxR, spread);
   }
   // 删除fbo恢复
-  temp.release();
+  temp && temp.release();
   CacheProgram.useProgram(gl, main);
   releaseFrameBuffer(gl, frameBuffer, W, H);
   return res;

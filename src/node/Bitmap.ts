@@ -9,7 +9,6 @@ import { RefreshLevel } from '../refresh/level';
 import { Options } from '../animation/AbstractAnimation';
 import FrameAnimation from '../animation/FrameAnimation';
 import config from '../config';
-import { color2rgbaStr } from '../style/color';
 import { canvasPolygon } from '../refresh/paint';
 import { LOAD } from '../refresh/refreshEvent';
 

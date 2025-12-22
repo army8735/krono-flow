@@ -89,13 +89,15 @@ export function loadShader(
 
 export function createTexture(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  n: number,
+  n?: number,
   tex?: TexImageSource,
   width?: number,
   height?: number,
 ): WebGLTexture {
   const texture = gl.createTexture()!;
-  bindTexture(gl, texture, n);
+  if (n !== undefined) {
+    bindTexture(gl, texture, n);
+  }
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   // 传入需要绑定的纹理
@@ -602,12 +604,8 @@ export function drawDual(
   distance = 1,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
-  // const w = Math.ceil(width * 0.5);
-  // const h = Math.ceil(height * 0.5);
-  const u_x = cacheProgram.uniform.u_x;
-  const u_y = cacheProgram.uniform.u_y;
-  gl.uniform1f(u_x, distance / width);
-  gl.uniform1f(u_y, distance / height);
+  const u_xy = cacheProgram.uniform.u_xy;
+  gl.uniform2f(u_xy, distance / width, distance / height);
   const tex = createTexture(gl, 0, undefined, w, h);
   const u_texture = cacheProgram.uniform.u_texture;
   gl.framebufferTexture2D(
@@ -737,6 +735,98 @@ export function drawRadial(
   return res;
 }
 
+export function drawBloom(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cacheProgram: CacheProgram,
+  texture1: WebGLTexture,
+  texture2: WebGLTexture,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
+  bindTexture(gl, texture1, 0);
+  bindTexture(gl, texture2, 1);
+  gl.uniform1i(cacheProgram.uniform.u_texture1, 0);
+  gl.uniform1i(cacheProgram.uniform.u_texture2, 1);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  // 回收
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
+export function drawBloomBlur(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cacheProgram: CacheProgram,
+  texture: WebGLTexture,
+  threshold: number,
+  knee: number,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
+  // 参数
+  if (threshold !== cacheProgram.uniformValue.u_threshold) {
+    const u_threshold = cacheProgram.uniform.u_threshold;
+    gl.uniform1f(u_threshold, threshold);
+  }
+  if (knee !== cacheProgram.uniformValue.u_knee) {
+    const u_knee = cacheProgram.uniform.u_knee;
+    gl.uniform1f(u_knee, knee);
+  }
+  bindTexture(gl, texture, 0);
+  const u_texture = cacheProgram.uniform.u_texture;
+  gl.uniform1i(u_texture, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  // 回收
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
+export function drawDualDown13(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cacheProgram: CacheProgram,
+  texture: WebGLTexture,
+  width: number,
+  height: number,
+  distance = 1,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
+  const u_xy = cacheProgram.uniform.u_xy;
+  gl.uniform2f(u_xy, distance / width, distance / height);
+  bindTexture(gl, texture, 0);
+  gl.uniform1i(cacheProgram.uniform.u_texture, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  // 回收
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
+export function drawDualUp13(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cacheProgram: CacheProgram,
+  texture1: WebGLTexture,
+  texture2: WebGLTexture,
+  width: number,
+  height: number,
+  distance = 1,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
+  const u_xy = cacheProgram.uniform.u_xy;
+  gl.uniform2f(u_xy, distance / width, distance / height);
+  bindTexture(gl, texture1, 0);
+  bindTexture(gl, texture2, 1);
+  gl.uniform1i(cacheProgram.uniform.u_texture1, 0);
+  gl.uniform1i(cacheProgram.uniform.u_texture2, 1);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  // 回收
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
 export const drawMbm = drawMask;
 
 export function drawColorMatrix(
@@ -849,6 +939,8 @@ export function texture2Blob (gl: WebGL2RenderingContext | WebGLRenderingContext
   os.canvas.toBlob(blob => {
     if (blob) {
       img.src = URL.createObjectURL(blob!);
+      img.style.backgroundColor = '#000';
+      img.style.transform = 'scaleY(-1)';
       document.body.appendChild(img);
       os.release();
     }
