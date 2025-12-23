@@ -9,6 +9,8 @@ const SUPPORT_OFFSCREEN_CANVAS =
 export type OffScreen = {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
+  width: number;
+  height: number;
   available: boolean;
   release: () => void;
 };
@@ -63,6 +65,8 @@ function offscreenCanvas(
   return {
     canvas: o,
     ctx,
+    width,
+    height,
     available: true,
     release() {
       if (!this.available || config.debug) {

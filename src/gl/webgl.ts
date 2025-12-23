@@ -199,13 +199,13 @@ export function drawTextureCache(
   // 纹理坐标默认0,1，除非传入tc指定范围
   if (tc) {
     vtTex[0] = tc.x1;
-    vtTex[1] = tc.y1;
+    vtTex[1] = tc.y3;
     vtTex[2] = tc.x1;
-    vtTex[3] = tc.y3;
+    vtTex[3] = tc.y1;
     vtTex[4] = tc.x3;
-    vtTex[5] = tc.y1;
+    vtTex[5] = tc.y3;
     vtTex[6] = tc.x3;
-    vtTex[7] = tc.y3;
+    vtTex[7] = tc.y1;
   }
   else {
     vtTex[0] = 0;
@@ -939,7 +939,7 @@ export function texture2Blob (gl: WebGL2RenderingContext | WebGLRenderingContext
   os.canvas.toBlob(blob => {
     if (blob) {
       img.src = URL.createObjectURL(blob!);
-      img.style.backgroundColor = '#000';
+      // img.style.backgroundColor = '#000';
       img.style.transform = 'scaleY(-1)';
       document.body.appendChild(img);
       os.release();
