@@ -85,7 +85,8 @@ export function genMerge(
         needMask = false;
       }
     }
-    if (needTotal || needFilter || needMask) {
+    const needHook = node.hookList.length > 0;
+    if (needTotal || needFilter || needMask || needHook) {
       const t: Merge = {
         i,
         lv,
@@ -193,7 +194,7 @@ export function genMerge(
         res = t;
       }
     }
-    // 生成mask
+    // 生成mask，需要判断next否则无效
     if (maskMode && node.textureTarget?.available && !node.textureMask?.available && node.next) {
       const t = genMask(
         gl,
@@ -211,6 +212,12 @@ export function genMerge(
         node.textureMask = node.textureTarget = t;
         res = t;
       }
+    }
+    // hook可能是列表，但一旦hook更新都会清除textureHook，因此整体是否进入hook渲染在这里提前判断
+    if (node.hookList.length && node.textureTarget?.available && !node.textureHook?.available) {
+      node.hookList.forEach(item => {
+        item(gl);
+      });
     }
   }
 }

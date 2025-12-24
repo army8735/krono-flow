@@ -59,6 +59,7 @@ import inject, { OffScreen } from '../util/inject';
 import { canvasPolygon } from '../refresh/paint';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
+import PuzzleAnimation from '../animation/PuzzleAnimation';
 
 let id = 0;
 
@@ -97,6 +98,7 @@ class Node extends Event {
   textureTotal?: TextureCache; // 局部子树缓存
   textureFilter?: TextureCache; // 有filter时的缓存
   textureMask?: TextureCache;
+  textureHook?: TextureCache; // puzzle这类特殊拼图效果，外部自定义实现对最终texture进行后渲染
   textureTarget?: TextureCache; // 指向自身所有缓存中最优先的那个
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
   tempMatrix: Float32Array;
@@ -107,6 +109,7 @@ class Node extends Event {
   _bboxInt?: Float32Array; // 扩大取整的bbox，渲染不会糊
   _filterBboxInt?: Float32Array; // 同上
   animationList: AbstractAnimation[]; // 节点上所有的动画列表
+  hookList: ((gl: WebGL2RenderingContext | WebGLRenderingContext) => void)[];
   protected contentLoadingNum: number; // 标识当前一共有多少显示资源在加载中
 
   constructor(props: Props) {
@@ -141,6 +144,7 @@ class Node extends Event {
     this.parentMwId = 0;
     this.hasContent = false;
     this.animationList = [];
+    this.hookList = [];
     this.contentLoadingNum = 0;
     // merge过程中相对于merge顶点作为局部根节点时暂存的数据
     this.tempOpacity = 1;
@@ -439,6 +443,7 @@ class Node extends Event {
         next = next.next;
       }
     }
+    this.clearMask();
   }
 
   calFilter(lv: RefreshLevel) {
@@ -1102,6 +1107,7 @@ class Node extends Event {
     if (upwards) {
       let p = this.parent;
       while (p && p !== this.root) {
+        p.clearTexCache();
         p._rect = undefined;
         p._bbox = undefined;
         p._bboxInt = undefined;
@@ -1834,6 +1840,13 @@ class Node extends Event {
     autoPlay?: boolean;
   }) {
     const animation = new CssAnimation(this, keyFrames, options);
+    return this.initAnimate(animation, options);
+  }
+
+  puzzleAnimate(options: Options & {
+    autoPlay?: boolean;
+  }) {
+    const animation = new PuzzleAnimation(this, options);
     return this.initAnimate(animation, options);
   }
 

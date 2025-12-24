@@ -26,6 +26,7 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
       }
       else {
         const prev = child.prev;
+        // 点到mask上面优先
         if (prev && isInMask(prev, x, y)) {
           return prev;
         }
@@ -40,13 +41,6 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
           return res;
         }
       }
-      else {
-        const prev = child.prev;
-        if (prev && isInMask(prev, x, y)) {
-          return prev;
-        }
-      }
-      return child;
     }
   }
 }

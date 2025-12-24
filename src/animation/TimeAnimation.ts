@@ -121,7 +121,7 @@ class TimeAnimation extends AbstractAnimation {
     this.setCurrentTimeArea();
   }
 
-  get area() {
+  get timeArea() {
     return this._timeArea.slice(0);
   }
 }
