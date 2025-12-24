@@ -2,7 +2,7 @@ import Root from '../node/Root';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import { pointInRect } from '../math/geom';
-import { VISIBILITY } from '../style/define';
+import { MASK, VISIBILITY } from '../style/define';
 
 function getChildByPoint(parent: Container, x: number, y: number): Node | undefined {
   const children = parent.children;
@@ -24,6 +24,12 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
           return res;
         }
       }
+      else {
+        const prev = child.prev;
+        if (prev && isInMask(prev, x, y)) {
+          return prev;
+        }
+      }
       return child;
     }
     // 范围外也需要遍历子节点，子节点可能超出范围
@@ -34,8 +40,25 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
           return res;
         }
       }
+      else {
+        const prev = child.prev;
+        if (prev && isInMask(prev, x, y)) {
+          return prev;
+        }
+      }
+      return child;
     }
   }
+}
+
+function isInMask(node: Node, x: number, y: number) {
+  const computedStyle = node.computedStyle;
+  if (computedStyle.maskMode !== MASK.NONE && computedStyle.pointerEvents) {
+    const rect = node._rect || node.rect;
+    const matrixWorld = node.matrixWorld;
+    return pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true);
+  }
+  return false;
 }
 
 export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false) {
