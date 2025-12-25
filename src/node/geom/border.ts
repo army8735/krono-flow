@@ -11,10 +11,10 @@ export function lineCap(bbox: Float32Array, width: number, points: number[][], c
     res[1] -= width;
     res[2] += width;
     res[3] += width;
-  }console.log(res.join(','))
+  }
   if (!points.length) {
     return res;
-  } console.log(points)
+  }
   // 仅首尾端点生效，一条线
   const first = points[0];
   const last = points[points.length - 1];
