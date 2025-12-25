@@ -196,7 +196,9 @@ function checkPlayAudio(animation: AbstractAnimation) {
           node.gainNode.gain.value = node.volumn;
         }
         if (gop.audioBufferSourceNode) {
-          gop.audioBufferSourceNode.stop();
+          try {
+            gop.audioBufferSourceNode.stop();
+          } catch(e) {}
           gop.audioBufferSourceNode.disconnect();
           gop.audioBufferSourceNode = undefined;
         }
@@ -226,8 +228,13 @@ function checkPlayAudio(animation: AbstractAnimation) {
         const gopList = node.decoder.gopList;
         for (let i = node.decoder.gopIndex + 1, len = gopList.length; i < len; i++) {
           const item = gopList[i];
+          if (animation.duration <= item.timestamp) {
+            return;
+          }
           if (item.audioBufferSourceNode) {
-            item.audioBufferSourceNode.stop();
+            try {
+              item.audioBufferSourceNode.stop();
+            } catch(e) {}
             item.audioBufferSourceNode.disconnect();
             item.audioBufferSourceNode = undefined;
           }
@@ -265,7 +272,9 @@ function checkStopAudio(animation: AbstractAnimation) {
       node.gainNode = undefined;
     }
     node.decoder?.gopList?.forEach(item => {
-      item.audioBufferSourceNode?.stop();
+      try {
+        item.audioBufferSourceNode?.stop();
+      } catch(e) {}
       item.audioBufferSourceNode?.disconnect();
       item.audioBufferSourceNode = undefined;
     });
