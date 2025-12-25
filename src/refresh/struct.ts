@@ -26,6 +26,7 @@ export function renderWebgl(
   const programs = root.programs;
   const { main, pr } = programs;
   CacheProgram.useProgram(gl, main);
+  gl.viewport(0, 0, W, H);
   const drawCallList: DrawData[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];
