@@ -34,7 +34,7 @@ abstract class AbstractAnimation extends Event {
   protected isEnd: boolean; // 忽略endDelay最后一轮结束标识，触发事件用
   protected isFirstInDelay: boolean; // 首次进入delay时标识
 
-  protected constructor(node: Node, options: Options) {
+  constructor(node: Node, options: Options) {
     super();
     this.node = node;
     this.duration = options.duration || 0;

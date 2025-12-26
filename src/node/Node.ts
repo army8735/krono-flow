@@ -59,7 +59,6 @@ import inject, { OffScreen } from '../util/inject';
 import { canvasPolygon } from '../refresh/paint';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
-import PuzzleAnimation from '../animation/PuzzleAnimation';
 
 let id = 0;
 
@@ -110,6 +109,9 @@ class Node extends Event {
   _filterBboxInt?: Float32Array; // 同上
   animationList: AbstractAnimation[]; // 节点上所有的动画列表
   hookList: ((gl: WebGL2RenderingContext | WebGLRenderingContext) => void)[];
+  customMasked?: Node; // 当是mask时可手动指定任意节点为内容，下面是类似mask属性的记录
+  customMask: Node[];
+
   protected contentLoadingNum: number; // 标识当前一共有多少显示资源在加载中
 
   constructor(props: Props) {
@@ -145,6 +147,7 @@ class Node extends Event {
     this.hasContent = false;
     this.animationList = [];
     this.hookList = [];
+    this.customMask = [];
     this.contentLoadingNum = 0;
     // merge过程中相对于merge顶点作为局部根节点时暂存的数据
     this.tempOpacity = 1;
@@ -411,19 +414,27 @@ class Node extends Event {
     if (computedStyle.maskMode) {
       // mask不能同时被mask
       this.mask = undefined;
-      let next = this.next;
-      while (next) {
-        // 初始连续mask的情况，next的computedStyle还未生成，紧接着后续节点自己calMask()会修正
-        if (next.computedStyle.maskMode) {
+      if (this.customMasked) {
+        const i = this.customMasked.customMask.indexOf(this);
+        if (i === -1) {
+          this.customMasked.customMask.push(this);
+        }
+      }
+      else {
+        let next = this.next;
+        while (next) {
+          // 初始连续mask的情况，next的computedStyle还未生成，紧接着后续节点自己calMask()会修正
+          if (next.computedStyle.maskMode) {
+            next.mask = this;
+            break;
+          }
+          if (next.computedStyle.breakMask) {
+            break;
+          }
+          // 本身是mask的话，忽略breakMask，后续肯定都是自己的遮罩对象
           next.mask = this;
-          break;
+          next = next.next;
         }
-        if (next.computedStyle.breakMask) {
-          break;
-        }
-        // 本身是mask的话，忽略breakMask，后续肯定都是自己的遮罩对象
-        next.mask = this;
-        next = next.next;
       }
     }
     else {
@@ -1843,17 +1854,23 @@ class Node extends Event {
     return this.initAnimate(animation, options);
   }
 
-  puzzleAnimate(options: Options & {
-    autoPlay?: boolean;
-  }) {
-    const animation = new PuzzleAnimation(this, options);
-    return this.initAnimate(animation, options);
-  }
-
   release() {
     this.remove();
     this.animationList.splice(0).forEach(item => item.remove());
     this.clearTexCache();
+  }
+
+  cloneProps() {
+    const props = Object.assign({}, this.props);
+    props.name = this.name;
+    props.style = this.getCssStyle();
+    return props;
+  }
+
+  clone() {
+    const props = this.cloneProps();
+    const res = new Node(props);
+    return res;
   }
 
   get width() {

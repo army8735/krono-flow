@@ -436,6 +436,18 @@ class Bitmap extends Node {
     return this.initAnimate(animation, options);
   }
 
+  override cloneProps() {
+    const props = super.cloneProps() as BitmapProps;
+    props.src = this._src;
+    return props;
+  }
+
+  override clone() {
+    const props = this.cloneProps();
+    const res = new Bitmap(props);
+    return res;
+  }
+
   get src() {
     return this._src;
   }

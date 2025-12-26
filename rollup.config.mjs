@@ -21,6 +21,11 @@ export default [
         ...publicConfig,
       },
       {
+        file: 'dist/index.mjs',
+        ...publicConfig,
+        format: 'es',
+      },
+      {
         file: 'dist/index.min.js',
         ...publicConfig,
         plugins: [

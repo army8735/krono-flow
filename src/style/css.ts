@@ -1098,6 +1098,17 @@ export function normalizePoints(item: JPoint) {
   };
 }
 
+export function getPropsRich(rich: ComputedRich) {
+  return {
+    ...rich,
+    textAlign: (['left', 'right', 'center', 'justify'][rich.textAlign] || 'left') as JRich['textAlign'],
+    textDecoration: rich.textDecoration.map(o => {
+      return ['none', 'underline', 'lineThrough'][o] || 'none';
+    }) as JRich['textDecoration'],
+    color: color2rgbaStr(rich.color),
+  };
+}
+
 export default {
   normalize,
   equalStyle,
@@ -1109,4 +1120,5 @@ export default {
   getCssStrokePosition,
   getCssBlur,
   normalizePoints,
+  getPropsRich,
 };

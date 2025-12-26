@@ -436,6 +436,20 @@ class Video extends Node {
     return this.initAnimate(animation, options);
   }
 
+  override cloneProps() {
+    const props = super.cloneProps() as VideoProps;
+    props.src = this._src;
+    props.currentTime = this._currentTime;
+    props.volumn = this._volumn;
+    return props;
+  }
+
+  override clone() {
+    const props = this.cloneProps();
+    const res = new Video(props);
+    return res;
+  }
+
   get src () {
     return this._src;
   }

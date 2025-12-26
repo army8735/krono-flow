@@ -3089,6 +3089,54 @@ class Text extends Node {
     return lv;
   }
 
+  getTextBehaviour() {
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+    } = this.style;
+    const autoW = width.u === StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+    const autoH = height.u === StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+    if (autoW) {
+      return 'auto';
+    }
+    else if (autoH) {
+      return 'autoH';
+    }
+    else {
+      return 'fixed';
+    }
+  }
+
+  override cloneProps() {
+    const props = super.cloneProps() as TextProps;
+    // props.rich = this.computedRich.map(item => getPropsRich(item));
+    if (this.isMounted) {
+      const textBehaviour = props.textBehaviour = this.getTextBehaviour();
+      const style = props.style!;
+      if (textBehaviour === 'auto') {
+        style.width = this.width;
+        style.height = this.height;
+      }
+      else if (textBehaviour === 'autoH') {
+        style.height = this.height;
+      }
+    }
+    props.content = this._content;
+    return props;
+  }
+
+  override clone() {
+    const props = this.cloneProps();
+    const res = new Text(props);
+    return res;
+  }
+
   override get bbox() {
     let res = this._bbox;
     if (!res) {

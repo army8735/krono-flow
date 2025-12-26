@@ -38,7 +38,10 @@ export type SubTexture = {
   tc?: { x1: number, y1: number, x3: number, y3: number };
 };
 
+let id = 0;
+
 class TextureCache {
+  id: number;
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   available: boolean;
   bbox: Float32Array;
@@ -51,6 +54,7 @@ class TextureCache {
   constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float32Array,
               source?: CanvasCache | HTMLImageElement | VideoFrame | HTMLCanvasElement,
               tc?: { x1: number, y1: number, x3: number, y3: number }) {
+    this.id = id++;
     this.gl = gl;
     this.bbox = bbox.slice(0);
     const maxX = bbox[2], maxY = bbox[3];
