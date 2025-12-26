@@ -109,7 +109,7 @@ class Node extends Event {
   _filterBboxInt?: Float32Array; // 同上
   animationList: AbstractAnimation[]; // 节点上所有的动画列表
   hookList: ((gl: WebGL2RenderingContext | WebGLRenderingContext) => void)[];
-  customMasked?: Node; // 当是mask时可手动指定任意节点为内容，下面是类似mask属性的记录
+  _customMasked?: Node; // 当是mask时可手动指定任意节点为内容，下面是类似mask属性的记录
   customMask: Node[];
 
   protected contentLoadingNum: number; // 标识当前一共有多少显示资源在加载中
@@ -691,15 +691,13 @@ class Node extends Event {
   // 是否有内容，由各个子类自己实现
   calContent() {
     const { computedStyle } = this;
-    this.hasContent = computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.backgroundColor[3] > 0;
+    this.hasContent = computedStyle.backgroundColor[3] > 0;
     return this.hasContent;
   }
 
   calContentLoading() {
     const computedStyle = this.computedStyle;
-    if (computedStyle.opacity <= 0
-      || computedStyle.visibility === VISIBILITY.HIDDEN
-      || !computedStyle.width || !computedStyle.height) {
+    if (!computedStyle.width || !computedStyle.height) {
       return 0;
     }
     return this.contentLoadingNum;
@@ -2022,6 +2020,29 @@ class Node extends Event {
       ceilBbox(res);
     }
     return res;
+  }
+
+  get customMasked(): Node | undefined {
+    return this._customMasked;
+  }
+
+  set customMasked(v: Node) {
+    if (v === this._customMasked) {
+      return;
+    }
+    if (this._customMasked) {
+      const customMask = this._customMasked.customMask;
+      const i = customMask.indexOf(this);
+      if (i > -1) {
+        customMask.splice(i, 1);
+      }
+    }
+    this._customMasked = v;
+    const customMask = this._customMasked.customMask;
+    if (!customMask.includes(this)) {
+      customMask.push(this);
+    }
+    this.refresh(RefreshLevel.MASK);
   }
 }
 

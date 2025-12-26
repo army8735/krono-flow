@@ -154,9 +154,6 @@ class Lottie extends Node {
 
   override calContent() {
     this.hasContent = false;
-    if (this.computedStyle.visibility === VISIBILITY.HIDDEN || this.computedStyle.opacity === 0) {
-      return this.hasContent;
-    }
     if (this._metaData) {
       if (this._currentTime >= 0 && this._currentTime < this._metaData.duration) {
         this.hasContent = true;

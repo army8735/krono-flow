@@ -1010,9 +1010,6 @@ class Text extends Node {
   override calContent() {
     this.hasContent = false;
     const { computedStyle } = this;
-    if (computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity === 0) {
-      return this.hasContent;
-    }
     if (this._content || computedStyle.backgroundColor[3] > 0) {
       this.hasContent = true;
     }

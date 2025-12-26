@@ -157,9 +157,6 @@ class Bitmap extends Node {
 
   override calContent() {
     this.hasContent = false;
-    if (this.computedStyle.visibility === VISIBILITY.HIDDEN || this.computedStyle.opacity === 0) {
-      return this.hasContent;
-    }
     const loader = this.loader;
     if (loader?.success) {
       if (loader.frames.length) {

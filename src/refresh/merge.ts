@@ -760,11 +760,11 @@ export function genMask(
       // 特殊指定渲染，以node为基准计算逆矩阵
       if (node.customMasked) {
         let target2 = node.customMasked.textureTarget;
-        const matrix = multiply(im, node.customMasked.matrixWorld);
-        if (!target2?.available && node.customMasked.hasContent) {
+        const matrix = multiply(im, node.customMasked.matrixWorld);console.log(node.customMasked.hasContent)
+        if (!target2?.available && node.customMasked.hasContent) {console.log(111)
           node.customMasked.genTexture(gl);
           target2 = node.customMasked.textureTarget;
-        }
+        } console.log(target2?.available)
         if (target2?.available && checkInRect(target2.bbox, matrix, x1, y1, width, height)) {
           const list2 = target2.list;
           for (let j = 0, len2 = list2.length; j < len2; j++) {

@@ -226,9 +226,6 @@ class Video extends Node {
 
   override calContent() {
     this.hasContent = false;
-    if (this.computedStyle.visibility === VISIBILITY.HIDDEN || this.computedStyle.opacity === 0) {
-      return this.hasContent;
-    }
     if (this._videoFrame || this.computedStyle.backgroundColor[3] > 0) {
       this.hasContent = true;
     }
