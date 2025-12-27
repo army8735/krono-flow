@@ -9,6 +9,8 @@ import math from './math';
 import history from './history';
 import refresh from './refresh';
 import format, { JPoint as JPointType, JStyle as JStyleType } from './format';
+import { Options as OptionsType } from './animation/AbstractAnimation';
+import { KeyFrame as KeyFrameType, JKeyFrame as JKeyFrameType } from './animation/CssAnimation';
 
 export namespace node {
   export type Container = InstanceType<typeof node.Container>;
@@ -30,6 +32,9 @@ export namespace animation {
   export type FrameAnimation = InstanceType<typeof animation.FrameAnimation>;
   export type TimeAnimation = InstanceType<typeof animation.TimeAnimation>;
   export type AniController = InstanceType<typeof animation.AniController>;
+  export type Options = OptionsType;
+  export type KeyFrame = KeyFrameType;
+  export type JKeyFrame = JKeyFrameType;
 }
 
 export namespace history {

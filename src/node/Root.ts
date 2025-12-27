@@ -280,14 +280,9 @@ class Root extends Container {
     node.clearTexCacheUpward();
     node.refreshLevel |= lv;
     this.rl |= lv;
-    let customMask = node.customMask;
     let mask = node.mask;
-    // 特殊指定mask，无视opacity
-    if (customMask.length && !(lv & RefreshLevel.MASK_OPACITY)) {
-      customMask.forEach(item => item.clearMask());
-    }
     // 检查mask影响，这里是作为被遮罩对象存在的关系检查，不会有连续，mask不能同时被mask
-    else if (mask && !(lv & RefreshLevel.MASK) && !(lv & RefreshLevel.BREAK_MASK)) {
+    if (mask && !(lv & RefreshLevel.MASK) && !(lv & RefreshLevel.BREAK_MASK)) {
       mask.clearMask();
     }
     let parent = node.parent;

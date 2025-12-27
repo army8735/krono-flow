@@ -463,7 +463,7 @@ export function normalize(style: Partial<JStyle>) {
     for (let i = 0; i < 2; i++) {
       let item = o[i];
       if (/^[-+]?[\d.]/.test(item as string)) {
-        let n = calUnit(item);
+        let n = calUnit(item, true);
         arr.push(n);
       }
       else {

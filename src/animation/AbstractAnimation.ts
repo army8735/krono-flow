@@ -7,13 +7,14 @@ import { BEGIN, END, FRAME } from './animationEvent';
 export type Options = {
   duration: number;
   direction?: 'forwards' | 'backwards' | 'alternate' | 'alternateReverse';
-  fill?: 'none' | 'forwards' | 'backwards';
+  fill?: 'none' | 'forwards' | 'backwards' | 'both';
   delay?: number;
   endDelay?: number;
   easing?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | number[] | ((v: number) => number);
   iterations?: number;
   iterationStart?: number;
   playbackRate?: number;
+  autoPlay?: boolean;
 };
 
 abstract class AbstractAnimation extends Event {

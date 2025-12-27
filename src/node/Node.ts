@@ -33,20 +33,16 @@ import {
   assignMatrix,
   calRectPoints,
   identity,
-  isE,
   multiply,
-  multiplyRotateX,
-  multiplyRotateY,
-  multiplyRotateZ,
-  multiplyScaleX,
-  multiplyScaleY,
-  multiplySkewX,
-  multiplySkewY,
   toE,
 } from '../math/matrix';
 import Container from './Container';
 import { LayoutData } from '../refresh/layout';
-import { calMatrixByOrigin, calPerspectiveMatrix, calRotateX, calRotateY, calRotateZ } from '../style/transform';
+import {
+  calMatrixByOrigin,
+  calPerspectiveMatrix,
+  calTransform,
+} from '../style/transform';
 import { d2r, H } from '../math/geom';
 import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
@@ -108,9 +104,6 @@ class Node extends Event {
   _bboxInt?: Float32Array; // 扩大取整的bbox，渲染不会糊
   _filterBboxInt?: Float32Array; // 同上
   animationList: AbstractAnimation[]; // 节点上所有的动画列表
-  hookList: ((gl: WebGL2RenderingContext | WebGLRenderingContext) => void)[];
-  _customMasked?: Node; // 当是mask时可手动指定任意节点为内容，下面是类似mask属性的记录
-  customMask: Node[];
 
   protected contentLoadingNum: number; // 标识当前一共有多少显示资源在加载中
 
@@ -146,8 +139,6 @@ class Node extends Event {
     this.parentMwId = 0;
     this.hasContent = false;
     this.animationList = [];
-    this.hookList = [];
-    this.customMask = [];
     this.contentLoadingNum = 0;
     // merge过程中相对于merge顶点作为局部根节点时暂存的数据
     this.tempOpacity = 1;
@@ -414,27 +405,19 @@ class Node extends Event {
     if (computedStyle.maskMode) {
       // mask不能同时被mask
       this.mask = undefined;
-      if (this.customMasked) {
-        const i = this.customMasked.customMask.indexOf(this);
-        if (i === -1) {
-          this.customMasked.customMask.push(this);
-        }
-      }
-      else {
-        let next = this.next;
-        while (next) {
-          // 初始连续mask的情况，next的computedStyle还未生成，紧接着后续节点自己calMask()会修正
-          if (next.computedStyle.maskMode) {
-            next.mask = this;
-            break;
-          }
-          if (next.computedStyle.breakMask) {
-            break;
-          }
-          // 本身是mask的话，忽略breakMask，后续肯定都是自己的遮罩对象
+      let next = this.next;
+      while (next) {
+        // 初始连续mask的情况，next的computedStyle还未生成，紧接着后续节点自己calMask()会修正
+        if (next.computedStyle.maskMode) {
           next.mask = this;
-          next = next.next;
+          break;
         }
+        if (next.computedStyle.breakMask) {
+          break;
+        }
+        // 本身是mask的话，忽略breakMask，后续肯定都是自己的遮罩对象
+        next.mask = this;
+        next = next.next;
       }
     }
     else {
@@ -563,11 +546,8 @@ class Node extends Event {
       computedStyle.transformOrigin = tfo as [number, number];
       // 一般走这里，特殊将left/top和translate合并一起加到matrix上，这样渲染视为[0, 0]开始
       computedStyle.translateX = calSize(style.translateX, this.computedStyle.width);
-      transform[12] = computedStyle.left + computedStyle.translateX;
       computedStyle.translateY = calSize(style.translateY, this.computedStyle.height);
-      transform[13] = computedStyle.top + computedStyle.translateY;
       computedStyle.translateZ = calSize(style.translateZ, this.computedStyle.width);
-      transform[14] = computedStyle.translateZ;
       const rotateX = style.rotateX ? style.rotateX.v : 0;
       const rotateY = style.rotateY ? style.rotateY.v : 0;
       const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
@@ -582,62 +562,18 @@ class Node extends Event {
       computedStyle.skewY = skewY;
       computedStyle.scaleX = scaleX;
       computedStyle.scaleY = scaleY;
-      if (rotateX) {
-        if(isE(transform)) {
-          calRotateX(transform, rotateX);
-        }
-        else {
-          multiplyRotateX(transform, d2r(rotateX));
-        }
-      }
-      if (rotateY) {
-        if(isE(transform)) {
-          calRotateY(transform, rotateY);
-        }
-        else {
-          multiplyRotateY(transform, d2r(rotateY));
-        }
-      }
-      if (rotateZ) {
-        if(isE(transform)) {
-          calRotateZ(transform, rotateZ);
-        }
-        else {
-          multiplyRotateZ(transform, d2r(rotateZ));
-        }
-      }
-      if (skewX) {
-        if(isE(transform)) {
-          transform[4] = Math.tan(d2r(skewX));
-        }
-        else {
-          multiplySkewX(transform, d2r(skewX));
-        }
-      }
-      if (skewY) {
-        if(isE(transform)) {
-          transform[1] = Math.tan(d2r(skewX));
-        }
-        else {
-          multiplySkewY(transform, d2r(skewX));
-        }
-      }
-      if (scaleX !== 1) {
-        if (isE(transform)) {
-          transform[0] = scaleX;
-        }
-        else {
-          multiplyScaleX(transform, scaleX);
-        }
-      }
-      if (scaleY !== 1) {
-        if (isE(transform)) {
-          transform[5] = scaleY;
-        }
-        else {
-          multiplyScaleY(transform, scaleY);
-        }
-      }
+      calTransform({
+        translateX: computedStyle.left + computedStyle.translateX,
+        translateY: computedStyle.top + computedStyle.translateY,
+        translateZ: computedStyle.translateZ,
+        rotateX,
+        rotateY,
+        rotateZ,
+        skewX,
+        skewY,
+        scaleX,
+        scaleY,
+      }, transform);
       const t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
       assignMatrix(matrix, t);
     }
@@ -1829,9 +1765,7 @@ class Node extends Event {
     return false;
   }
 
-  protected initAnimate(animation: AbstractAnimation, options: Options & {
-    autoPlay?: boolean;
-  }) {
+  protected initAnimate(animation: AbstractAnimation, options: Options) {
     this.animationList.push(animation);
     const root = this.root;
     if (this.isDestroyed || !root) {
@@ -1842,12 +1776,13 @@ class Node extends Event {
     if (options.autoPlay) {
       animation.play();
     }
+    else if (options.fill === 'backwards' || options.fill === 'both') {
+      animation.gotoAndStop(0);
+    }
     return animation;
   }
 
-  animate(keyFrames: JKeyFrame[], options: Options & {
-    autoPlay?: boolean;
-  }) {
+  animate(keyFrames: JKeyFrame[], options: Options) {
     const animation = new CssAnimation(this, keyFrames, options);
     return this.initAnimate(animation, options);
   }
@@ -2020,29 +1955,6 @@ class Node extends Event {
       ceilBbox(res);
     }
     return res;
-  }
-
-  get customMasked(): Node | undefined {
-    return this._customMasked;
-  }
-
-  set customMasked(v: Node) {
-    if (v === this._customMasked) {
-      return;
-    }
-    if (this._customMasked) {
-      const customMask = this._customMasked.customMask;
-      const i = customMask.indexOf(this);
-      if (i > -1) {
-        customMask.splice(i, 1);
-      }
-    }
-    this._customMasked = v;
-    const customMask = this._customMasked.customMask;
-    if (!customMask.includes(this)) {
-      customMask.push(this);
-    }
-    this.refresh(RefreshLevel.MASK);
   }
 }
 

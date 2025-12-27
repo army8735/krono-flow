@@ -1,9 +1,9 @@
 import AbstractAnimation, { Options } from './AbstractAnimation';
 import Video from '../node/Video';
 import Audio from '../node/Audio';
+import Lottie from '../node/Lottie';
 import { VISIBILITY } from '../style/define';
 import config from '../config';
-import Lottie from '../node/Lottie';
 
 class TimeAnimation extends AbstractAnimation {
   node: Video | Audio | Lottie;
