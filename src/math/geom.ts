@@ -265,7 +265,7 @@ export function isConvexPolygonOverlapRect(
     [y1, y2] = [y2, y1];
   }
   let xa = 0, ya = 0, xb = 0, yb = 0;
-  // 看多边形顶点是否在矩形内，以及边是否有在矩形内的部分
+  // 看多边形顶点是否在矩形内，以及边是否有边相交情况
   for (let i = 0, len = points.length; i < len; i++) {
     const { x, y } = points[i];
     if (i) {
@@ -291,57 +291,41 @@ export function isConvexPolygonOverlapRect(
         return true;
       }
     }
-    // 点在矩形外，多边形每条边如果在矩形范围内也重叠，按先x小大（如果相等再y小大）排列边的2个点
     const { x: nx, y: ny } = points[(i + 1) % len];
-    // 垂直线特殊情况，x在矩形内y两点在矩形外
-    if (x === nx) {
-      if (x >= x1 && x <= x2) {
-        if (y >= ny) {
-          if (y >= y2 && ny <= y1) {
-            return true;
-          }
-        }
-        else {
-          if (y <= y1 && ny >= y2) {
-            return true;
-          }
-        }
+    let is = intersectLineLine(x1, y1, x2, y1, x, y, nx, ny);
+    if (is) {
+      if (is.toSource > 0 && is.toSource < 1 && is.toClip > 0 && is.toClip < 1) {
+        return true;
+      }
+      else if (includeIntersect && is.toSource >= 0 && is.toSource <= 1 && is.toClip >= 0 && is.toClip <= 1) {
+        return true;
       }
     }
-    // 水平线特殊情况同理
-    else if (y === ny) {
-      if (y >= y1 && y <= y2) {
-        if (x >= nx) {
-          if (x >= x2 && nx <= x1) {
-            return true;
-          }
-        }
-        else {
-          if (x <= x1 && nx >= x2) {
-            return true;
-          }
-        }
+    is = intersectLineLine(x1, y1, x1, y2, x, y, nx, ny);
+    if (is) {
+      if (is.toSource > 0 && is.toSource < 1 && is.toClip > 0 && is.toClip < 1) {
+        return true;
+      }
+      else if (includeIntersect && is.toSource >= 0 && is.toSource <= 1 && is.toClip >= 0 && is.toClip <= 1) {
+        return true;
       }
     }
-    // 斜线普通情况，求得在x1/x2的y点坐标，检查是否在矩形内
-    else {
-      const dx = nx - x;
-      const dy = ny - y;
-      const t1 = (x1 - x) / dx;
-      if (t1 >= 0 && t1 <= 1) {
-        const p = y + t1 * dy;
-        if (includeIntersect && p >= y1 && p <= y2
-          || !includeIntersect && p > y1 && p < y2) {
-          return true;
-        }
+    is = intersectLineLine(x2, y1, x2, y2, x, y, nx, ny);
+    if (is) {
+      if (is.toSource > 0 && is.toSource < 1 && is.toClip > 0 && is.toClip < 1) {
+        return true;
       }
-      const t2 = (x2 - x) / dx;
-      if (t2 >= 0 && t2 <= 1) {
-        const p = y + t2 * dy;
-        if (includeIntersect && p >= y1 && p <= y2
-          || !includeIntersect && p > y1 && p < y2) {
-          return true;
-        }
+      else if (includeIntersect && is.toSource >= 0 && is.toSource <= 1 && is.toClip >= 0 && is.toClip <= 1) {
+        return true;
+      }
+    }
+    is = intersectLineLine(x1, y2, x2, y2, x, y, nx, ny);
+    if (is) {
+      if (is.toSource > 0 && is.toSource < 1 && is.toClip > 0 && is.toClip < 1) {
+        return true;
+      }
+      else if (includeIntersect && is.toSource >= 0 && is.toSource <= 1 && is.toClip >= 0 && is.toClip <= 1) {
+        return true;
       }
     }
   }

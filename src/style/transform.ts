@@ -1,10 +1,12 @@
 import { d2r } from '../math/geom';
 import {
   identity,
-  isE,
+  isE, multiplyRotateX, multiplyRotateY, multiplyRotateZ, multiplyScaleX, multiplyScaleY, multiplySkewX, multiplySkewY,
   multiplyTfo,
-  tfoMultiply,
+  tfoMultiply, toE,
 } from '../math/matrix';
+import { ComputedStyle, Style } from './define';
+import { calSize } from './css';
 
 export function calRotateX(t: Float32Array, v: number) {
   return calRotateXRadian(t, d2r(v));
@@ -76,12 +78,90 @@ export function calPerspectiveMatrix(perspective: number, ox: number, oy: number
   return res;
 }
 
+export function calTransform(computedStyle: Partial<Pick<ComputedStyle, 'translateX'
+  | 'translateY'
+  | 'translateZ'
+  | 'rotateX'
+  | 'rotateY'
+  | 'rotateZ'
+  | 'skewX'
+  | 'skewY'
+  | 'scaleX'
+  | 'scaleY'
+>>, transform?: Float32Array) {
+  if (!transform) {
+    transform = identity();
+  }
+  const { translateX, translateY, translateZ, rotateX, rotateY, rotateZ, scaleX, scaleY, skewX, skewY } = computedStyle;
+  transform[12] = translateX || 0;
+  transform[13] = translateY || 0;
+  transform[14] = translateZ || 0;
+  if (rotateX) {
+    if(isE(transform)) {
+      calRotateX(transform, rotateX);
+    }
+    else {
+      multiplyRotateX(transform, d2r(rotateX));
+    }
+  }
+  if (rotateY) {
+    if(isE(transform)) {
+      calRotateY(transform, rotateY);
+    }
+    else {
+      multiplyRotateY(transform, d2r(rotateY));
+    }
+  }
+  if (rotateZ) {
+    if(isE(transform)) {
+      calRotateZ(transform, rotateZ);
+    }
+    else {
+      multiplyRotateZ(transform, d2r(rotateZ));
+    }
+  }
+  if (skewX) {
+    if(isE(transform)) {
+      transform[4] = Math.tan(d2r(skewX));
+    }
+    else {
+      multiplySkewX(transform, d2r(skewX));
+    }
+  }
+  if (skewY) {
+    if(isE(transform)) {
+      transform[1] = Math.tan(d2r(skewY));
+    }
+    else {
+      multiplySkewY(transform, d2r(skewY));
+    }
+  }
+  if (scaleX !== undefined && scaleX !== 1) {
+    if (isE(transform)) {
+      transform[0] = scaleX;
+    }
+    else {
+      multiplyScaleX(transform, scaleX);
+    }
+  }
+  if (scaleY !== undefined && scaleY !== 1) {
+    if (isE(transform)) {
+      transform[5] = scaleY;
+    }
+    else {
+      multiplyScaleY(transform, scaleY);
+    }
+  }
+  return transform;
+}
+
 export default {
   calRotateX,
   calRotateXRadian,
   calRotateZ,
   calRotateZRadian,
   calMatrixByOrigin,
+  calTransform,
   calTransformByMatrixAndOrigin,
   calPerspectiveMatrix,
 };
