@@ -222,7 +222,7 @@ export function shouldIgnore(computedStyle: ComputedStyle) {
   return (computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity <= 0) && !computedStyle.maskMode;
 }
 
-// 统计mask节点后续关联跳过的数量，注意特殊自定义customMask
+// 统计mask节点后续关联跳过的数量
 function genNextCount(
   node: Node,
   structs: Struct[],

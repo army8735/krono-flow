@@ -1,12 +1,18 @@
 import { d2r } from '../math/geom';
 import {
   identity,
-  isE, multiplyRotateX, multiplyRotateY, multiplyRotateZ, multiplyScaleX, multiplyScaleY, multiplySkewX, multiplySkewY,
+  isE,
+  multiplyRotateX,
+  multiplyRotateY,
+  multiplyRotateZ,
+  multiplyScaleX,
+  multiplyScaleY,
+  multiplySkewX,
+  multiplySkewY,
   multiplyTfo,
-  tfoMultiply, toE,
+  tfoMultiply,
 } from '../math/matrix';
-import { ComputedStyle, Style } from './define';
-import { calSize } from './css';
+import { ComputedStyle } from './define';
 
 export function calRotateX(t: Float32Array, v: number) {
   return calRotateXRadian(t, d2r(v));
