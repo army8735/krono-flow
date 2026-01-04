@@ -63,7 +63,7 @@ export function calComputedFilter(filter: Style['filter'], w: number, h: number)
     }
     else if (u === StyleUnit.LIGHT_DARK) {
       const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
-      return { radius, angle: v.angle.v };
+      return { radius, angle: v.angle.v, u };
     }
   }) as ComputedFilter[];
 }
