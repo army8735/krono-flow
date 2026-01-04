@@ -851,6 +851,37 @@ export function drawColorMatrix(
   gl.disableVertexAttribArray(a_texCoords);
 }
 
+export function drawLightDark(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cacheProgram: CacheProgram,
+  texture: WebGLTexture,
+  radius: number,
+  radian: number,
+  width: number,
+  height: number,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, cacheProgram);
+  const h = Math.sin(radian) / height;
+  const v = Math.cos(radian) / width;
+  const u_velocity = cacheProgram.uniform.u_velocity;
+  gl.uniform2f(u_velocity, h, v);
+  const r = Math.floor(radius);
+  if (r !== cacheProgram.uniformValue.u_radius) {
+    const u_radius = cacheProgram.uniform.u_radius;
+    gl.uniform1i(u_radius, r);
+  }
+  // 纹理单元
+  bindTexture(gl, texture, 0);
+  const u_texture = cacheProgram.uniform.u_texture;
+  gl.uniform1i(u_texture, 0);
+  // 渲染并销毁
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
 function pointNDC(
   x: number,
   y: number,

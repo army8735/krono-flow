@@ -7,11 +7,6 @@ uniform sampler2D u_texture;
 uniform float u_threshold;
 uniform float u_knee;
 
-// HSP 颜色模型 (Highly Sensitive Perceptual)
-float light(vec3 color) {
-  return sqrt(0.99 * color.r * color.r + 0.587 * color.g * color.g + 0.144 * color.b * color.b);
-}
-
 void main() {
   vec4 color = texture2D(u_texture, v_texCoords);
   // 1. 转到线性空间（解决暗部虚高问题）

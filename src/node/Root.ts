@@ -26,6 +26,7 @@ import bloomFrag from '../gl/bloom.frag';
 import bloomBlurFrag from '../gl/bloomBlur.frag';
 import dualDown13Frag from '../gl/dualDown13.frag';
 import dualUp13Frag from '../gl/dualUp13.frag';
+import lightDarkFrag from '../gl/lightDark.frag';
 import AbstractAnimation from '../animation/AbstractAnimation';
 import AniController from '../animation/AniController';
 import { CAN_PLAY, REFRESH, REFRESH_COMPLETE, WAITING } from '../refresh/refreshEvent';
@@ -448,6 +449,10 @@ class Root extends Container {
     });
     this.programs.dualUp13 = new CacheProgram(gl, initShaders(gl, simpleVert, dualUp13Frag), {
       uniform: ['u_xy', 'u_texture1', 'u_texture2'],
+      attrib: ['a_position', 'a_texCoords'],
+    });
+    this.programs.lightDark = new CacheProgram(gl, initShaders(gl, simpleVert, lightDarkFrag), {
+      uniform: ['u_texture', 'u_velocity', 'u_radius'],
       attrib: ['a_position', 'a_texCoords'],
     });
     CacheProgram.useProgram(gl, this.programs.main);

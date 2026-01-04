@@ -22,6 +22,7 @@ import CacheProgram from '../gl/CacheProgram';
 import { calMatrixByOrigin, calPerspectiveMatrix } from '../style/transform';
 import { genBloom } from './bloom';
 import { needReGen } from './spread';
+import { genLightDark } from './lightDark';
 
 export type Merge = {
   i: number;
@@ -620,6 +621,23 @@ function genFilter(
         }
         res = t;
       }
+    }
+    else if (item.u === StyleUnit.LIGHT_DARK) {
+      const t = genLightDark(
+        gl,
+        root,
+        node,
+        res || source,
+        item.radius,
+        item.angle,
+        W,
+        H,
+      );
+      if (res) {
+        res.release();
+      }
+      res = t;
+      console.log(t);
     }
   });
   // 颜色调整
