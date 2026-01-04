@@ -16,6 +16,10 @@ export enum StyleUnit {
   RADIAL_BLUR = 14,
   BLOOM = 15,
   LIGHT_DARK = 16,
+  HUE_ROTATE = 17,
+  SATURATE = 18,
+  BRIGHTNESS = 19,
+  CONTRAST = 20,
 }
 
 export type StyleStrValue = {
@@ -97,18 +101,6 @@ export type Gradient = {
   t: GRADIENT;
   d: number[];
   stops: ColorStop[];
-};
-
-export type Pattern = {
-  url: string;
-  type: PATTERN_FILL_TYPE;
-  scale?: StyleNumValue;
-};
-
-export type ComputedPattern = {
-  url: string;
-  type: PATTERN_FILL_TYPE;
-  scale: number;
 };
 
 export type ComputedGradient = {
@@ -460,9 +452,59 @@ export type ComputedLightDark = {
   u: StyleUnit.LIGHT_DARK;
 }
 
-export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom | LightDark;
+export type HueRotate = {
+  v: {
+    radius: StyleNumValue;
+  },
+  u: StyleUnit.HUE_ROTATE;
+};
 
-export type ComputedFilter = ComputedGaussBlur | ComputedRadialBlur | ComputedMotionBlur | ComputedBloom | ComputedLightDark;
+export type ComputedHueRotate = {
+  radius: number;
+  u: StyleUnit.HUE_ROTATE;
+};
+
+export type Saturate = {
+  v: {
+    radius: StyleNumValue;
+  },
+  u: StyleUnit.SATURATE;
+};
+
+export type ComputedSaturate = {
+  radius: number;
+  u: StyleUnit.SATURATE;
+};
+
+export type Brightness = {
+  v: {
+    radius: StyleNumValue;
+  },
+  u: StyleUnit.BRIGHTNESS;
+};
+
+export type ComputedBrightness = {
+  radius: number;
+  u: StyleUnit.BRIGHTNESS;
+};
+
+export type Contrast = {
+  v: {
+    radius: StyleNumValue;
+  },
+  u: StyleUnit.CONTRAST;
+};
+
+export type ComputedContrast = {
+  radius: number;
+  u: StyleUnit.CONTRAST;
+};
+
+export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom | LightDark
+  | HueRotate | Saturate | Brightness | Contrast;
+
+export type ComputedFilter = ComputedGaussBlur | ComputedRadialBlur | ComputedMotionBlur | ComputedBloom
+  | ComputedLightDark | ComputedHueRotate | ComputedSaturate | ComputedBrightness | ComputedContrast;
 
 export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumValue {
   if (v === 'auto') {

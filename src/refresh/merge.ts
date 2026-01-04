@@ -23,6 +23,7 @@ import { calMatrixByOrigin, calPerspectiveMatrix } from '../style/transform';
 import { genBloom } from './bloom';
 import { needReGen } from './spread';
 import { genLightDark } from './lightDark';
+import { genColorMatrix } from './cm';
 
 export type Merge = {
   i: number;
@@ -637,7 +638,27 @@ function genFilter(
         res.release();
       }
       res = t;
-      console.log(t);
+    }
+    else if (item.u === StyleUnit.HUE_ROTATE && item.radius % 360
+      || item.u === StyleUnit.SATURATE && item.radius !== 1
+      || item.u === StyleUnit.BRIGHTNESS && item.radius !== 1
+      || item.u === StyleUnit.CONTRAST && item.radius !== 1
+    ) {
+      const t = genColorMatrix(
+        gl,
+        root,
+        res || source,
+        item.u === StyleUnit.HUE_ROTATE ? item.radius : 0,
+        item.u === StyleUnit.SATURATE ? item.radius : 1,
+        item.u === StyleUnit.BRIGHTNESS ? item.radius : 1,
+        item.u === StyleUnit.CONTRAST ? item.radius : 1,
+        W,
+        H,
+      );
+      if (res) {
+        res.release();
+      }
+      res = t;
     }
   });
   // 颜色调整

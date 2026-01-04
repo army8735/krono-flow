@@ -623,6 +623,42 @@ export function normalize(style: Partial<JStyle>) {
             u: StyleUnit.LIGHT_DARK,
           });
         }
+        else if (k === 'hueRotate') {
+          const n = parseFloat(v) || 0;
+          filter.push({
+            v: {
+              radius: { v: n, u: StyleUnit.DEG },
+            },
+            u: StyleUnit.HUE_ROTATE,
+          });
+        }
+        else if (k === 'saturate') {
+          const n = parseFloat(v) || 0;
+          filter.push({
+            v: {
+              radius: { v: n * 0.01, u: StyleUnit.PERCENT },
+            },
+            u: StyleUnit.SATURATE,
+          });
+        }
+        else if (k === 'brightness') {
+          const n = parseFloat(v) || 0;
+          filter.push({
+            v: {
+              radius: { v: n * 0.01, u: StyleUnit.PERCENT },
+            },
+            u: StyleUnit.BRIGHTNESS,
+          });
+        }
+        else if (k === 'contrast') {
+          const n = parseFloat(v) || 0;
+          filter.push({
+            v: {
+              radius: { v: n * 0.01, u: StyleUnit.PERCENT },
+            },
+            u: StyleUnit.CONTRAST,
+          });
+        }
       }
     });
     res.filter = filter;
@@ -633,7 +669,6 @@ export function normalize(style: Partial<JStyle>) {
 export function setFontStyle(style: ComputedStyle | ComputedRich) {
   const fontSize = style.fontSize || config.defaultFontSize;
   let fontFamily = style.fontFamily || config.defaultFontFamily;
-  // fontFamily += ',' + 'pingfangsc-regular';
   if (/[\s.,/\\]/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }

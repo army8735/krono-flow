@@ -424,7 +424,7 @@ class Root extends Container {
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.cm = new CacheProgram(gl, initShaders(gl, simpleVert, cmFrag), {
-      uniform: ['u_m', 'u_texture'],
+      uniform: ['u_m', 'u_m[0]', 'u_texture'],
       attrib: ['a_position', 'a_texCoords'],
     });
     this.programs.mask = new CacheProgram(gl, initShaders(gl, simpleVert, maskFrag), {

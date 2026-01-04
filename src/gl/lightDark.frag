@@ -11,7 +11,7 @@ const int MAX_KERNEL_SIZE = 1024;
 
 void main() {
   vec4 color = texture2D(u_texture, v_texCoords);
-  float total = float(u_radius * 2);
+  float total = float(u_radius);
   for (int i = 1; i < MAX_KERNEL_SIZE; i++) {
     if (i > u_radius) {
       break;
@@ -34,14 +34,16 @@ void main() {
       reduce = texture2D(u_texture, bias2).a - 1.0;
     }
     if (add > 0.0) {
-      color.r += add / total;
-      color.g += add / total;
-      color.b += add / total;
+      float f = (total - float(i)) / total / total;
+      color.r += add * f;
+      color.g += add * f;
+      color.b += add * f;
     }
     if (reduce < 0.0) {
-      color.r += reduce / total;
-      color.g += reduce / total;
-      color.b += reduce / total;
+      float f = (total - float(i)) / total / total;
+      color.r += reduce * f;
+      color.g += reduce * f;
+      color.b += reduce * f;
     }
   }
   gl_FragColor = vec4(

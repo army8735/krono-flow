@@ -62,8 +62,19 @@ export function calComputedFilter(filter: Style['filter'], w: number, h: number)
       return { threshold: v.threshold.v, knee: v.knee.v, u };
     }
     else if (u === StyleUnit.LIGHT_DARK) {
-      const radius = v.radius.u === StyleUnit.PERCENT ? v.radius.v * w * 0.01 : v.radius.v;
-      return { radius, angle: v.angle.v, u };
+      return { radius: v.radius.v, angle: v.angle.v, u };
+    }
+    else if (u === StyleUnit.HUE_ROTATE) {
+      return { radius: v.radius.v, u };
+    }
+    else if (u === StyleUnit.SATURATE) {
+      return { radius: v.radius.v, u };
+    }
+    else if (u === StyleUnit.BRIGHTNESS) {
+      return { radius: v.radius.v, u };
+    }
+    else if (u === StyleUnit.CONTRAST) {
+      return { radius: v.radius.v, u };
     }
   }) as ComputedFilter[];
 }
