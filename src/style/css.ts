@@ -2,9 +2,7 @@ import { ComputedRich, JPoint, JRich, JStyle, Point, Rich, } from '../format';
 import inject from '../util/inject';
 import { clone, isNil, isString } from '../util/type';
 import {
-  BLUR,
   calUnit,
-  ComputedBlur,
   ComputedFilter,
   ComputedGradient,
   ComputedStyle,
@@ -609,6 +607,22 @@ export function normalize(style: Partial<JStyle>) {
             u: StyleUnit.BLOOM,
           });
         }
+        else if (k === 'lightDark') {
+          const n = parseFloat(v) || 0;
+          const angle = { v: 0, u: StyleUnit.DEG } as StyleNumValue;
+          const m = /,\s*(.+)\s*(?:,\s*(.+))?/.exec(v);
+          if (m) {
+            const a = parseFloat(m[1]);
+            angle.v = a || 0;
+          }
+          filter.push({
+            v: {
+              radius: { v: Math.max(n, 0), u: StyleUnit.PX },
+              angle,
+            },
+            u: StyleUnit.LIGHT_DARK,
+          });
+        }
       }
     });
     res.filter = filter;
@@ -1016,41 +1030,21 @@ export function getCssObjectFit(v: OBJECT_FIT) {
   return ['fill', 'contain', 'cover'][v];
 }
 
-export function getCssBlur(blur: ComputedBlur) {
-  if (blur.t === BLUR.NONE) {
-    return 'none';
-  }
-  let s = ['none', 'gauss', 'motion', 'radial', 'background'][blur.t] + `(${blur.radius})`;
-  if (blur.t === BLUR.MOTION) {
-    s += ` angle(${blur.angle || 0}) offset(${blur.offset || 0})`;
-  }
-  else if (blur.t === BLUR.RADIAL) {
-    const p = (blur.center || []).map(item => {
-      return item * 100 + '%';
-    });
-    while (p.length < 2) {
-      p.push('50%');
-    }
-    s += ` center(${p.join(', ')})`;
-  }
-  else if (blur.t === BLUR.BACKGROUND) {
-    s += ` saturation(${(blur.saturation === undefined ? 1 : blur.saturation) * 100}%)`;
-  }
-  return s;
-}
-
 export function getCssFilter(filter: ComputedFilter) {
   if (filter.u === StyleUnit.GAUSS_BLUR) {
-    return 'gauss(' + filter.radius + ')';
+    return 'gaussBlur(' + filter.radius + ')';
   }
   else if (filter.u === StyleUnit.RADIAL_BLUR) {
-    return 'radial(' + filter.radius + ',' + filter.center.join(', ') + ')';
+    return 'radialBlur(' + filter.radius + ',' + filter.center.join(', ') + ')';
   }
   else if (filter.u === StyleUnit.MOTION_BLUR) {
-    return 'motion(' + filter.radius + ',' + filter.offset + ')';
+    return 'motionBlur(' + filter.radius + ',' + filter.offset + ')';
   }
   else if (filter.u === StyleUnit.BLOOM) {
-    return 'motion(' + filter.threshold + ',' + filter.knee + ')';
+    return 'bloom(' + filter.threshold + ',' + filter.knee + ')';
+  }
+  else if (filter.u === StyleUnit.LIGHT_DARK) {
+    return 'lightDark(' + filter.radius + ',' + filter.angle + ')';
   }
 }
 
@@ -1118,7 +1112,6 @@ export default {
   getCssMbm,
   getCssFillStroke,
   getCssStrokePosition,
-  getCssBlur,
   normalizePoints,
   getPropsRich,
 };

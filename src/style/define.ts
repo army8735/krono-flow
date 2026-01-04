@@ -15,6 +15,7 @@ export enum StyleUnit {
   MOTION_BLUR = 13,
   RADIAL_BLUR = 14,
   BLOOM = 15,
+  LIGHT_DARK = 16,
 }
 
 export type StyleStrValue = {
@@ -405,32 +406,6 @@ export type StyleOverflowValue = {
   u: number;
 }
 
-export enum BLUR {
-  NONE = 0,
-  GAUSSIAN = 1,
-  MOTION = 2,
-  RADIAL = 3,
-  BACKGROUND = 4,
-}
-
-export type Blur = {
-  t: BLUR;
-  radius: StyleNumValue;
-  center?: [StyleNumValue, StyleNumValue];
-  saturation?: StyleNumValue;
-  offset?: StyleNumValue;
-  angle?: StyleNumValue;
-};
-
-export type ComputedBlur = {
-  t: BLUR;
-  radius: number;
-  center?: [number, number];
-  saturation?: number;
-  offset?: number;
-  angle?: number;
-};
-
 export type GaussBlur = {
   v: {
     radius: StyleNumValue;
@@ -471,9 +446,23 @@ export type Bloom = {
 
 export type ComputedBloom = { threshold: number, knee: number, u: StyleUnit.BLOOM };
 
-export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom;
+export type LightDark = {
+  v: {
+    radius: StyleNumValue;
+    angle: StyleNumValue;
+  },
+  u: StyleUnit.LIGHT_DARK;
+};
 
-export type ComputedFilter = ComputedGaussBlur | ComputedRadialBlur | ComputedMotionBlur | ComputedBloom;
+export type ComputedLightDark = {
+  radius: number;
+  angle: number;
+  u: StyleUnit.LIGHT_DARK;
+}
+
+export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom | LightDark;
+
+export type ComputedFilter = ComputedGaussBlur | ComputedRadialBlur | ComputedMotionBlur | ComputedBloom | ComputedLightDark;
 
 export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumValue {
   if (v === 'auto') {
