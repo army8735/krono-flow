@@ -29,7 +29,7 @@ export namespace node {
 export namespace animation {
   export type AbstractAnimation = InstanceType<typeof animation.AbstractAnimation>;
   export type CssAnimation = InstanceType<typeof animation.CssAnimation>;
-  export type FrameAnimation = InstanceType<typeof animation.FrameAnimation>;
+  export type GifAnimation = InstanceType<typeof animation.GifAnimation>;
   export type TimeAnimation = InstanceType<typeof animation.TimeAnimation>;
   export type AniController = InstanceType<typeof animation.AniController>;
   export type Options = OptionsType;
