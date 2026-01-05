@@ -7,7 +7,7 @@ import { LayoutData } from '../refresh/layout';
 import { OBJECT_FIT, StyleUnit, VISIBILITY } from '../style/define';
 import { RefreshLevel } from '../refresh/level';
 import { Options } from '../animation/AbstractAnimation';
-import FrameAnimation from '../animation/FrameAnimation';
+import GifAnimation from '../animation/GifAnimation';
 import config from '../config';
 import { canvasPolygon } from '../refresh/paint';
 import { LOAD } from '../refresh/refreshEvent';
@@ -426,10 +426,10 @@ class Bitmap extends Node {
     }
   }
 
-  frameAnimate(frameArea: [number, number], options: Options & {
+  gifAnimate(frameArea: [number, number], options: Options & {
     autoPlay?: boolean;
   }) {
-    const animation = new FrameAnimation(this, frameArea, options);
+    const animation = new GifAnimation(this, frameArea, options);
     return this.initAnimate(animation, options);
   }
 

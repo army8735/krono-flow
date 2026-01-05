@@ -15,6 +15,7 @@ export type Options = {
   iterationStart?: number;
   playbackRate?: number;
   autoPlay?: boolean;
+  spf?: number;
 };
 
 abstract class AbstractAnimation extends Event {
