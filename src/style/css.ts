@@ -659,6 +659,15 @@ export function normalize(style: Partial<JStyle>) {
             u: StyleUnit.CONTRAST,
           });
         }
+        else if (k === 'sepia') {
+          const n = parseFloat(v) || 0;
+          filter.push({
+            v: {
+              radius: { v: n * 0.01, u: StyleUnit.PERCENT },
+            },
+            u: StyleUnit.SEPIA,
+          });
+        }
       }
     });
     res.filter = filter;
@@ -912,6 +921,21 @@ export function equalStyle(a: Partial<Style>, b: Partial<Style>, k: keyof Style)
       }
       else if (ai.u === StyleUnit.BLOOM) {
         if (ai.v.threshold.v !== bi.v.threshold.v || ai.v.knee.v !== bi.v.knee.v) {
+          return false;
+        }
+      }
+      else if (ai.u === StyleUnit.LIGHT_DARK) {
+        if (ai.v.radius.v !== bi.v.radius.v || ai.v.angle.v !== bi.v.angle.v) {
+          return false;
+        }
+      }
+      else if (ai.u === StyleUnit.HUE_ROTATE
+        || ai.u === StyleUnit.SATURATE
+        || ai.u === StyleUnit.BRIGHTNESS
+        || ai.u === StyleUnit.CONTRAST
+        || ai.u === StyleUnit.SEPIA
+      ) {
+        if (ai.v.radius.v !== bi.v.radius.v) {
           return false;
         }
       }

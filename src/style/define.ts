@@ -20,6 +20,7 @@ export enum StyleUnit {
   SATURATE = 18,
   BRIGHTNESS = 19,
   CONTRAST = 20,
+  SEPIA = 21,
 }
 
 export type StyleStrValue = {
@@ -500,11 +501,24 @@ export type ComputedContrast = {
   u: StyleUnit.CONTRAST;
 };
 
+export type Sepia = {
+  v: {
+    radius: StyleNumValue;
+  },
+  u: StyleUnit.SEPIA;
+};
+
+export type ComputedSepia = {
+  radius: number;
+  u: StyleUnit.SEPIA;
+};
+
 export type StyleFilter = GaussBlur | RadialBlur | MotionBlur | Bloom | LightDark
-  | HueRotate | Saturate | Brightness | Contrast;
+  | HueRotate | Saturate | Brightness | Contrast | Sepia;
 
 export type ComputedFilter = ComputedGaussBlur | ComputedRadialBlur | ComputedMotionBlur | ComputedBloom
-  | ComputedLightDark | ComputedHueRotate | ComputedSaturate | ComputedBrightness | ComputedContrast;
+  | ComputedLightDark | ComputedHueRotate | ComputedSaturate | ComputedBrightness | ComputedContrast
+  | ComputedSepia;
 
 export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumValue {
   if (v === 'auto') {

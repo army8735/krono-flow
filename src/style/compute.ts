@@ -76,6 +76,9 @@ export function calComputedFilter(filter: Style['filter'], w: number, h: number)
     else if (u === StyleUnit.CONTRAST) {
       return { radius: v.radius.v, u };
     }
+    else if (u === StyleUnit.SEPIA) {
+      return { radius: v.radius.v, u };
+    }
   }) as ComputedFilter[];
 }
 

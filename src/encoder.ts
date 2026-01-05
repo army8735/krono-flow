@@ -8,6 +8,7 @@ import {
   WebMOutputFormat,
 } from 'mediabunny';
 import { AudioChunk, sleep } from './decoder';
+import inject from './util/inject';
 
 export enum EncoderType {
   INIT = 0,
@@ -247,9 +248,11 @@ export const onMessage = async (e: MessageEvent<{
       // 并发太多控制一下
       if (videoEncoder.encodeQueueSize > 5) {
         await sleep(100);
-        for (let i = 0; i < 10; i++) {
+        inject.warn('encodeQueueSize: ' + videoEncoder.encodeQueueSize);
+        for (let i = 0; i < 20; i++) {
           if (videoEncoder.encodeQueueSize > 5) {
             await sleep(100);
+            inject.warn('encodeQueueSize: ' + videoEncoder.encodeQueueSize + ', ' + i);
           }
           else {
             break;

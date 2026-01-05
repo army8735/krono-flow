@@ -6,6 +6,8 @@ import { isFunction, isNumber, isString } from '../util/type';
 import {
   Bloom,
   GaussBlur,
+  HueRotate,
+  LightDark,
   MotionBlur,
   RadialBlur,
   Style,
@@ -200,6 +202,18 @@ export class CssAnimation extends AbstractAnimation {
             else if (item.u === StyleUnit.BLOOM) {
               item.v.threshold.v += d.threshold! * percent;
               item.v.knee.v += d.knee! * percent;
+            }
+            else if (item.u === StyleUnit.LIGHT_DARK) {
+              item.v.radius.v += d.radius! * percent;
+              item.v.angle.v += d.angle! * percent;
+            }
+            else if (item.u === StyleUnit.HUE_ROTATE
+              || item.u === StyleUnit.SATURATE
+              || item.u === StyleUnit.BRIGHTNESS
+              || item.u === StyleUnit.CONTRAST
+              || item.u === StyleUnit.SEPIA
+            ) {
+              item.v.radius.v += d.radius! * percent;
             }
           });
           update[key] = o;
@@ -485,6 +499,18 @@ function calTransition(node: Node, keyFrames: KeyFrame[], keys: (keyof Style)[])
             else if (item.u === StyleUnit.BLOOM) {
               o.threshold = (item2 as Bloom).v.threshold.v - (item as Bloom).v.threshold.v;
               o.knee = (item2 as Bloom).v.knee.v - (item as Bloom).v.knee.v;
+            }
+            else if (item.u === StyleUnit.LIGHT_DARK) {
+              o.radius = (item2 as LightDark).v.radius.v - (item as LightDark).v.radius.v;
+              o.angle = (item2 as LightDark).v.angle.v - (item as LightDark).v.angle.v;
+            }
+            else if (item.u === StyleUnit.HUE_ROTATE
+              || item.u === StyleUnit.SATURATE
+              || item.u === StyleUnit.BRIGHTNESS
+              || item.u === StyleUnit.CONTRAST
+              || item.u === StyleUnit.SEPIA
+            ) {
+              o.radius = (item2 as HueRotate).v.radius.v - (item as HueRotate).v.radius.v;
             }
             diff.push(o);
           }

@@ -78,6 +78,9 @@ export function genMerge(
       if (item.u === StyleUnit.BLOOM) {
         return item.threshold > 0;
       }
+      if (item.u === StyleUnit.SEPIA) {
+        return item.radius > 0 && item.radius < 1;
+      }
       return item.radius >= 1;
     }).filter(item => item).length > 0 && !textureFilter?.available;
     let needMask = maskMode > 0 && !textureMask?.available;
@@ -643,6 +646,7 @@ function genFilter(
       || item.u === StyleUnit.SATURATE && item.radius !== 1
       || item.u === StyleUnit.BRIGHTNESS && item.radius !== 1
       || item.u === StyleUnit.CONTRAST && item.radius !== 1
+      || item.u === StyleUnit.SEPIA && item.radius > 0 && item.radius < 1
     ) {
       const t = genColorMatrix(
         gl,
@@ -652,6 +656,7 @@ function genFilter(
         item.u === StyleUnit.SATURATE ? item.radius : 1,
         item.u === StyleUnit.BRIGHTNESS ? item.radius : 1,
         item.u === StyleUnit.CONTRAST ? item.radius : 1,
+        item.u === StyleUnit.SEPIA ? item.radius : 0,
         W,
         H,
       );
@@ -661,24 +666,6 @@ function genFilter(
       res = t;
     }
   });
-  // 颜色调整
-  // if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
-  //   const t = genColorMatrix(
-  //     gl,
-  //     root,
-  //     res || source,
-  //     hueRotate,
-  //     saturate,
-  //     brightness,
-  //     contrast,
-  //     W,
-  //     H,
-  //   );
-  //   if (res) {
-  //     res.release();
-  //   }
-  //   res = t;
-  // }
   return res;
 }
 

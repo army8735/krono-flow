@@ -1,7 +1,7 @@
 import { createTexture, drawColorMatrix } from '../gl/webgl';
 import { genFrameBufferWithTexture, releaseFrameBuffer } from './fb';
 import TextureCache from './TextureCache';
-import { identity, multiply } from '../math/matrix';
+import { assignMatrix, identity, multiply } from '../math/matrix';
 import Root from '../node/Root';
 import { d2r } from '../math/geom';
 import CacheProgram from '../gl/CacheProgram';
@@ -15,6 +15,7 @@ export function genColorMatrix(
   saturate: number,
   brightness: number,
   contrast: number,
+  sepia: number,
   W: number,
   H: number,
 ) {
@@ -23,7 +24,8 @@ export function genColorMatrix(
   CacheProgram.useProgram(gl, cm);
   let res: TextureCache = textureTarget;
   let frameBuffer: WebGLFramebuffer | undefined;
-  if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
+  // console.log(hueRotate, saturate, brightness, contrast, sepia);
+  if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1 || sepia !== 1) {
     const rotation = d2r(hueRotate % 360);
     const cosR = Math.cos(rotation);
     const sinR = Math.sin(rotation);
@@ -33,34 +35,43 @@ export function genColorMatrix(
       0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0,
       0, 0, 0, 1,
     ]) : identity();
-    const s = saturate;
     const lr = 0.213;
     const lg = 0.715;
     const lb = 0.072;
-    const sr = (1 - s) * lr;
-    const sg = (1 - s) * lg;
-    const sb = (1 - s) * lb;
+    const sr = (1 - saturate) * lr;
+    const sg = (1 - saturate) * lg;
+    const sb = (1 - saturate) * lb;
     const ms = saturate !== 1 ? new Float32Array([
-      sr + s, sg, sb, 0,
-      sr, sg + s, sb, 0,
-      sr, sg, sb + s, 0,
+      sr + saturate, sg, sb, 0,
+      sr, sg + saturate, sb, 0,
+      sr, sg, sb + saturate, 0,
       0, 0, 0, 1,
     ]) : identity();
     const b = brightness - 1;
-    const c = contrast;
-    const d = (1 - c) * 0.5;
+    const d = (1 - contrast) * 0.5;
     // 不是简单的mh * ms * mb * mc，第5行是加法（b+d），https://stackoverflow.com/questions/49796623/how-to-implement-a-color-matrix-filter-in-a-glsl-shader
     const m = multiply(mh, ms);
-    if (c !== 1) {
-      m[0] *= c;
-      m[1] *= c;
-      m[2] *= c;
-      m[4] *= c;
-      m[5] *= c;
-      m[6] *= c;
-      m[8] *= c;
-      m[9] *= c;
-      m[10] *= c;
+    if (contrast !== 1) {
+      m[0] *= contrast;
+      m[1] *= contrast;
+      m[2] *= contrast;
+      m[4] *= contrast;
+      m[5] *= contrast;
+      m[6] *= contrast;
+      m[8] *= contrast;
+      m[9] *= contrast;
+      m[10] *= contrast;
+    }
+    if (sepia !== 1) {
+      const amount = Math.min(1, Math.max(0, 1 - sepia));
+      const m1 = new Float32Array([
+        0.393 + 0.607 * amount, 0.769 - 0.769 * amount, 0.189 - 0.189 * amount, 0,
+        0.349 - 0.349 * amount, 0.686 + 0.314 * amount, 0.168 - 0.168 * amount, 0,
+        0.272 - 0.272 * amount, 0.534 - 0.534 * amount, 0.131 + 0.869 * amount, 0,
+        0, 0, 0, 1,
+      ]);
+      const m2 = multiply(m, m1);
+      assignMatrix(m, m2);
     }
     const old = res;
     const t = genColorByMatrix(gl, cm, old, [
